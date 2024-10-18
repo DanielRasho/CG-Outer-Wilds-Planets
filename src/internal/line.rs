@@ -4,10 +4,10 @@ use super::entity::vertex::Vertex;
 pub fn line(a: &Vertex, b: &Vertex) -> Vec<Fragment> {
     let mut fragments = Vec::new();
 
-    let x0 = a.position.x as i32;
-    let y0 = a.position.y as i32;
-    let x1 = b.position.x as i32;
-    let y1 = b.position.y as i32;
+    let x0 = a.transformed_position.x as i32;
+    let y0 = a.transformed_position.y as i32;
+    let x1 = b.transformed_position.x as i32;
+    let y1 = b.transformed_position.y as i32;
 
     let dx = (x1 - x0).abs();
     let dy = (y1 - y0).abs();
@@ -23,7 +23,7 @@ pub fn line(a: &Vertex, b: &Vertex) -> Vec<Fragment> {
         // Interpolate depth and color between a and b
         let t = ((x - x0) as f32 / (x1 - x0) as f32).clamp(0.0, 1.0); // Interpolation factor
         let color = a.color.lerp(&b.color, t); // Assuming you have a lerp function for Color
-        let depth = a.position.z * (1.0 - t) + b.position.z * t;
+        let depth = a.transformed_position.z * (1.0 - t) + b.transformed_position.z * t;
 
         // Create a fragment at this point
         fragments.push(Fragment::new(x as f32, y as f32, color, depth));

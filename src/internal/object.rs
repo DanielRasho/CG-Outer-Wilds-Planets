@@ -1,6 +1,6 @@
 use tobj;
 use nalgebra_glm::{Vec2, Vec3};
-use super::entity::vertex::Vertex;
+use super::entity::{color::Color, vertex::Vertex};
 
 pub struct Obj {
     meshes: Vec<Mesh>,
@@ -53,7 +53,7 @@ impl Obj {
                     .cloned()
                     .unwrap_or(Vec2::new(0.0, 0.0));
 
-                vertices.push(Vertex::new(position, normal, tex_coords));
+                vertices.push(Vertex::new_with_color(position, normal, tex_coords, Color::new(255, 255, 255)));
             }
         }
 

@@ -23,11 +23,11 @@ impl Vertex {
     }
   }
 
-  pub fn new_with_color(position: Vec3, color: Color) -> Self {
+  pub fn new_with_color(position: Vec3, normal: Vec3, tex_coords: Vec2, color: Color) -> Self {
     Vertex {
       position,
-      normal: Vec3::new(0.0, 0.0, 0.0),
-      tex_coords: Vec2::new(0.0, 0.0),
+      normal,
+      tex_coords,
       color,
       transformed_position: Vec3::new(0.0, 0.0, 0.0),
       transformed_normal: Vec3::new(0.0, 0.0, 0.0),

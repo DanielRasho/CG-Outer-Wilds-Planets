@@ -16,6 +16,9 @@ pub fn render(framebuffer: &mut Framebuffer, uniforms: &Uniforms, vertex_array: 
         let transformed = vertex_shader(vertex, uniforms);
         transformed_vertices.push(transformed);
     }
+    // println!("{}", uniforms.model_matrix);
+    
+    // println!("a: {}, b:{}", vertex_array[1].position, transformed_vertices[1].position);
 
     // Primitive Assembly Stage
     let mut triangles = Vec::new();

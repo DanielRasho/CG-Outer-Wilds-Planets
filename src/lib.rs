@@ -1,9 +1,10 @@
 mod internal;
 
-use internal::entity::vertex;
+use internal::entity::vertex::{self, Vertex};
 use internal::object::Obj;
 use minifb::{Window, WindowOptions, Key};
 use nalgebra_glm::Vec3;
+use tobj::load_obj;
 
 use std::time::Duration;
 use std::f32::consts::PI;
@@ -34,11 +35,11 @@ pub fn start() {
     
     framebuffer.set_background_color(Color::new(30, 20, 120));
     
-    let mut translation = Vec3::new(300.0, 200.0, 0.0);
+    let mut translation = Vec3::new(000.0, 000.0, 0.0);
     let mut rotation = Vec3::new(0.0, 0.0, 0.0);
-    let mut scale = 100.0f32;
+    let mut scale = 50.0f32;
     
-    let obj = Obj::load("./assets/mesh/triangle.obj").expect("Failed to load obj");
+    let obj = Obj::load("./assets/mesh/spaceShip.obj").expect("Failed to load obj");
     let vertex_array = obj.get_vertex_array();
     
     // RENDER LOOP
