@@ -35,7 +35,7 @@ pub fn start() {
     
     framebuffer.set_background_color(Color::new(30, 20, 120));
     
-    let mut translation = Vec3::new(000.0, 000.0, 0.0);
+    let mut translation = Vec3::new(400.0, 300.0, 0.0);
     let mut rotation = Vec3::new(0.0, 0.0, 0.0);
     let mut scale = 50.0f32;
     

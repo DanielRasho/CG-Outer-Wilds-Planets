@@ -1,3 +1,4 @@
+use std::f32::INFINITY;
 use std::fs::File;
 use std::io::{self, Write};
 use std::path::Path;
@@ -8,6 +9,7 @@ pub struct Framebuffer {
     pub width : usize, 
     pub height: usize,
     pub buffer : Vec<u32>,
+    pub zbuffer : Vec<f32>,
     background_color : Color,
     current_color : Color
 }
@@ -23,10 +25,12 @@ impl Framebuffer {
     pub fn new(width: usize, height: usize, background_color: Color ) -> Self {
         let buffer_size = width * height;
         let buffer = vec![background_color.to_hex(); buffer_size]; // Initialize buffer with background color
+        let zbuffer = vec![f32::INFINITY; buffer_size]; // Initialize buffer with background color
         Framebuffer {
             width,
             height,
             buffer,
+            zbuffer,
             background_color,
             current_color: Color::new(0, 0, 0), // Default current color to black
         }
@@ -41,19 +45,25 @@ impl Framebuffer {
     // Function to clear the framebuffer with the background color
     pub fn clear(&mut self) {
         let background_hex = self.background_color.to_hex();
-        for pixel in self.buffer.iter_mut() {
-            *pixel = background_hex;
+        for i in 0..self.buffer.len() {
+            self.buffer[i] = background_hex;
+            self.zbuffer[i] = INFINITY;
         }
     }
 
     // Function to draw a point at (x, y) using the current color
-    pub fn draw_point(&mut self, x: usize, y: usize) {
+    pub fn draw_point(&mut self, x: usize, y: usize, depth: f32) {
         if  0 < x  
             && x < self.width 
             && 0 < y 
             && y < self.height {
+
             let index = y * self.width + x;
-            self.buffer[index] = self.current_color.to_hex();
+
+            if self.zbuffer[index] > depth {
+                self.buffer[index] = self.current_color.to_hex();
+                self.zbuffer[index] = depth;
+            }
         }
     }
 

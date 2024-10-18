@@ -3,7 +3,7 @@ use nalgebra_glm::{Vec3, Mat4};
 use super::entity::vertex::Vertex;
 use super::framebuffer::Framebuffer;
 use super::shader::vertex_shader;
-use super::line::triangle;
+use super::line::{triangle_wireframe, triangle_flat_shade};
 
 pub struct Uniforms {
     pub model_matrix: Mat4,
@@ -35,7 +35,7 @@ pub fn render(framebuffer: &mut Framebuffer, uniforms: &Uniforms, vertex_array: 
     // Rasterization Stage
     let mut fragments = Vec::new();
     for tri in &triangles {
-        fragments.extend(triangle(&tri[0], &tri[1], &tri[2]));
+        fragments.extend(triangle_flat_shade(&tri[0], &tri[1], &tri[2]));
     }
 
     // Fragment Processing Stage
@@ -45,7 +45,7 @@ pub fn render(framebuffer: &mut Framebuffer, uniforms: &Uniforms, vertex_array: 
         if x < framebuffer.width && y < framebuffer.height {
             let color = fragment.color;
             framebuffer.set_current_color(color);
-            framebuffer.draw_point(x, y);
+            framebuffer.draw_point(x, y, fragment.depth);
         }
     }
 }
