@@ -61,7 +61,7 @@ pub fn triangle_flat_shade(v1: &Vertex, v2: &Vertex, v3: &Vertex) -> Vec<Fragmen
      
      let (a, b, c) = (v1.transformed_position, v2.transformed_position, v3.transformed_position);
      
-     let light_dir = Vec3::new(0.0, 0.0, -1.0);
+     let light_dir = Vec3::new(0.0, -1.0, -1.0);
      
      let (min_x, min_y, max_x, max_y) = calculate_bounding_box(&a, &b, &c);
      
@@ -81,12 +81,11 @@ pub fn triangle_flat_shade(v1: &Vertex, v2: &Vertex, v3: &Vertex) -> Vec<Fragmen
          w3 >= 0.0 && w3 <= 1.0 {
         // Interpolate normal
         // let normal = v1.transformed_normal * w1 + v2.transformed_normal * w2 + v3.transformed_normal * w3;
-        let normal = v1.transformed_normal.normalize();
+        let normal = v1.normal * w1 + v2.normal * w2 + v3.normal * w3;
+        let normal = normal.normalize();
 
         // Calculate lighting intensity
         let intensity = dot(&normal, &light_dir).max(0.0);
-        
-
 
         // Create a gray color and apply lighting
         let base_color = Color::new(100, 100, 100); // Medium gray
