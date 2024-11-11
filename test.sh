@@ -1,1 +1,1 @@
-cargo build --release && ./target/release/cg_outer_wilds
+cargo build --release && ./target/release/cg_outer_wilds_planets

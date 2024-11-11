@@ -1,5 +1,5 @@
 [package]
-name = "cg_outer_wilds"
+name = "cg_outer_wilds_planets"
 version = "0.1.0"
 edition = "2021"
 

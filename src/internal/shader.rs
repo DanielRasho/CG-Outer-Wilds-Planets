@@ -10,7 +10,7 @@ pub fn vertex_shader(vertex: &Vertex, uniforms: &Uniforms) -> Vertex {
     vertex.position.z,
     1.0
   );
-  let transformed = uniforms.model_matrix * position;
+  let transformed = uniforms.viewport_matrix * uniforms.perspective_matrix * uniforms.view_matrix * uniforms.model_matrix * position;
 
   // Perform perspective division
   let w = transformed.w;

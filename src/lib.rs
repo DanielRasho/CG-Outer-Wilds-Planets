@@ -1,16 +1,15 @@
 mod internal;
 
-use internal::entity::vertex::{self, Vertex};
+use internal::camera::Camera;
 use internal::object::Obj;
 use minifb::{Window, WindowOptions, Key};
 use nalgebra_glm::Vec3;
-use tobj::load_obj;
 
 use std::time::Duration;
 use std::f32::consts::PI;
 
 use internal::framebuffer::Framebuffer;
-use internal::render::{render, Uniforms, create_model_matrix};
+use internal::render::{create_model_matrix, create_perspective_matrix, create_view_matrix, create_viewport_matrix, render, Uniforms};
 use internal::entity::color::Color;
 
 
@@ -32,15 +31,26 @@ pub fn start() {
       window_height,
       WindowOptions::default()
     ).unwrap();
+
+    let mut camera = Camera::new(
+        Vec3::new(0.0, 0.0, 100.0), 
+        Vec3::new(10.0, 10.0, 0.0), 
+        Vec3::new(0.0, 1.0, 0.0)
+    );
     
     framebuffer.set_background_color(Color::new(30, 20, 120));
     
-    let mut translation = Vec3::new(400.0, 300.0, 0.0);
-    let mut rotation = Vec3::new(0.0, 0.0, 0.0);
-    let mut scale = 50.0f32;
+    let translation = Vec3::new(0.0, 0.0, 0.0);
+    let rotation = Vec3::new(0.0, 0.0, 0.0);
+    let scale = 1.0f32;
     
     let obj = Obj::load("./assets/mesh/spaceShip.obj").expect("Failed to load obj");
     let vertex_array = obj.get_vertex_array();
+
+    let model_matrix = create_model_matrix(translation, scale, rotation);
+    let mut view_matrix = create_view_matrix(camera.eye, camera.center, camera.up);
+    let perspective_matrix = create_perspective_matrix(window_width as f32, window_height as f32);
+    let viewport_matrix = create_viewport_matrix(framebuffer_width as f32, framebuffer_height as f32);
     
     // RENDER LOOP
     while window.is_open() {
@@ -48,16 +58,14 @@ pub fn start() {
             break;
         }
 
-        handle_input(&window, &mut translation, &mut rotation, &mut scale);
-        
-        framebuffer.clear();
-        
-        let model_matrix = create_model_matrix(translation, scale, rotation);
-        
-        let uniforms = Uniforms{ model_matrix };
-        
+        handle_input(&window, &mut camera);
+        if camera.check_if_changed(){
+            view_matrix = create_view_matrix(camera.eye, camera.center, camera.up);
+        }
+        let uniforms = Uniforms{ model_matrix , view_matrix, perspective_matrix, viewport_matrix};
+
         framebuffer.set_current_color_hex(0xFFFFFF);
-        
+        framebuffer.clear();
         render(&mut framebuffer, &uniforms, &vertex_array);
 
         window
@@ -68,41 +76,32 @@ pub fn start() {
     }
 }
 
-fn handle_input(window: &Window, translation: &mut Vec3, rotation: &mut Vec3, scale: &mut f32) {
+fn handle_input(window: &Window, camera: &mut Camera) {
+
+    const ROTATION_SPEED : f32 = PI /20.0;
+    const ZOOM_SPEED : f32 = 1.0;
+
+    // camera orbit controls
     if window.is_key_down(Key::Right) {
-        translation.x += 10.0;
+        camera.orbit(ROTATION_SPEED, 0.0);
     }
     if window.is_key_down(Key::Left) {
-        translation.x -= 10.0;
-    }
-    if window.is_key_down(Key::Up) {
-        translation.y -= 10.0;
+        camera.orbit(-ROTATION_SPEED, 0.0);
     }
     if window.is_key_down(Key::Down) {
-        translation.y += 10.0;
+        camera.orbit(0.0, -ROTATION_SPEED);
     }
-    if window.is_key_down(Key::S) {
-        *scale += 2.0;
+    if window.is_key_down(Key::Up) {
+        camera.orbit(0.0, ROTATION_SPEED);
     }
-    if window.is_key_down(Key::A) {
-        *scale -= 2.0;
+
+    // camera zoom
+    if window.is_key_down(Key::J) {
+        camera.zoom(ZOOM_SPEED);
     }
-    if window.is_key_down(Key::Q) {
-        rotation.x -= PI / 10.0;
+    if window.is_key_down(Key::K) {
+        camera.zoom(-ZOOM_SPEED);
     }
-    if window.is_key_down(Key::W) {
-        rotation.x += PI / 10.0;
-    }
-    if window.is_key_down(Key::E) {
-        rotation.y -= PI / 10.0;
-    }
-    if window.is_key_down(Key::R) {
-        rotation.y += PI / 10.0;
-    }
-    if window.is_key_down(Key::T) {
-        rotation.z -= PI / 10.0;
-    }
-    if window.is_key_down(Key::Y) {
-        rotation.z += PI / 10.0;
-    }
+    
 }
+

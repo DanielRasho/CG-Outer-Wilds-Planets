@@ -1,4 +1,5 @@
-use nalgebra_glm::{Vec3, Mat4};
+use nalgebra_glm::{Vec3, Mat4, look_at, perspective};
+use std::f32::consts::PI;
 
 use super::entity::vertex::Vertex;
 use super::framebuffer::Framebuffer;
@@ -7,6 +8,9 @@ use super::line::{triangle_wireframe, triangle_flat_shade};
 
 pub struct Uniforms {
     pub model_matrix: Mat4,
+    pub view_matrix: Mat4,
+    pub perspective_matrix: Mat4,
+    pub viewport_matrix: Mat4
 }
 
 pub fn render(framebuffer: &mut Framebuffer, uniforms: &Uniforms, vertex_array: &[Vertex]) {
@@ -86,4 +90,26 @@ pub fn create_model_matrix(translation: Vec3, scale: f32, rotation: Vec3) -> Mat
     );
 
     transform_matrix * rotation_matrix
+}
+
+pub fn create_view_matrix(eye: Vec3, center: Vec3, up: Vec3) -> Mat4 {
+    look_at(&eye, &center, &up)
+}
+
+pub fn create_perspective_matrix(window_width: f32, window_height: f32) -> Mat4 {
+    let fov = 45.0 * PI / 180.0;
+    let aspect_ratio = window_width / window_height;
+    let near = 0.1;
+    let far = 100.0;
+
+    perspective(fov, aspect_ratio, near, far)
+}
+
+pub fn create_viewport_matrix(width: f32, height: f32) -> Mat4 {
+    Mat4::new(
+        width / 2.0, 0.0, 0.0, width / 2.0,
+        0.0, -height / 2.0, 0.0, height / 2.0,
+        0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0
+    )
 }
