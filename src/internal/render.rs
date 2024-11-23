@@ -1,6 +1,7 @@
 use nalgebra_glm::{Vec3, Mat4, look_at, perspective};
 use std::f32::consts::PI;
 
+use super::camera::{self, Camera};
 use super::entity::vertex::Vertex;
 use super::framebuffer::Framebuffer;
 use super::shader::vertex_shader;
@@ -13,7 +14,7 @@ pub struct Uniforms {
     pub viewport_matrix: Mat4
 }
 
-pub fn render(framebuffer: &mut Framebuffer, uniforms: &Uniforms, vertex_array: &[Vertex]) {
+pub fn render(framebuffer: &mut Framebuffer, uniforms: &Uniforms, vertex_array: &[Vertex], camera: &Camera) {
     // Vertex Shader Stage
     let mut transformed_vertices = Vec::with_capacity(vertex_array.len());
     for vertex in vertex_array {
@@ -38,8 +39,9 @@ pub fn render(framebuffer: &mut Framebuffer, uniforms: &Uniforms, vertex_array: 
 
     // Rasterization Stage
     let mut fragments = Vec::new();
+    let camera_view_dir = (camera.center - camera.eye).normalize();
     for tri in &triangles {
-        fragments.extend(triangle_flat_shade(&tri[0], &tri[1], &tri[2]));
+        fragments.extend(triangle_flat_shade(&tri[0], &tri[1], &tri[2], camera_view_dir));
     }
 
     // Fragment Processing Stage

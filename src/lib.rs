@@ -34,7 +34,7 @@ pub fn start() {
       WindowOptions::default()
     ).unwrap();
     
-    let skybox = Skybox::new(120, 10.0, Color::new(255, 255, 255), Color::new(0, 0, 0));
+    let skybox = Skybox::new(120, 10.0, Color::new(255, 255, 255), Color::new(0, 0, 50));
 
     let mut camera = Camera::new(
         Vec3::new(0.0, 0.0, 100.0), 
@@ -48,7 +48,7 @@ pub fn start() {
     
     let obj = Obj::load("./assets/mesh/spaceShip.obj").expect("Failed to load obj");
     let vertex_array = obj.get_vertex_array();
-    let vertex_array : Vec<Vertex> = vec![];
+    // let vertex_array : Vec<Vertex> = vec![];
 
     let model_matrix = create_model_matrix(translation, scale, rotation);
     let mut view_matrix = create_view_matrix(camera.eye, camera.center, camera.up);
@@ -68,7 +68,7 @@ pub fn start() {
             framebuffer.set_current_color_hex(0xFFFFFF);
             let uniforms = Uniforms{ model_matrix , view_matrix, perspective_matrix, viewport_matrix};
             skybox.render(&mut framebuffer, &uniforms);
-            render(&mut framebuffer, &uniforms, &vertex_array);
+            render(&mut framebuffer, &uniforms, &vertex_array, &camera);
         }
 
         window

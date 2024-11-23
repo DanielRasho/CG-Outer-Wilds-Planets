@@ -1,8 +1,10 @@
 use nalgebra_glm::{dot, Vec3};
+use rand::distributions::uniform;
 
 use super::entity::color::Color;
 use super::fragment::{self, Fragment};
 use super::entity::vertex::Vertex;
+use super::render::Uniforms;
 
 pub fn line(a: &Vertex, b: &Vertex) -> Vec<Fragment> {
     let mut fragments = Vec::new();
@@ -56,48 +58,62 @@ pub fn triangle_wireframe(v1: &Vertex, v2: &Vertex, v3: &Vertex) -> Vec<Fragment
     fragments
 }
 
-pub fn triangle_flat_shade(v1: &Vertex, v2: &Vertex, v3: &Vertex) -> Vec<Fragment> {
+pub fn triangle_flat_shade(v1: &Vertex, v2: &Vertex, v3: &Vertex, camera_dir: Vec3) -> Vec<Fragment> {
     let mut fragments = Vec::new();
      
-     let (a, b, c) = (v1.transformed_position, v2.transformed_position, v3.transformed_position);
-     
-     let light_dir = Vec3::new(0.0, 0.0, 1.0);
-     
-     let (min_x, min_y, max_x, max_y) = calculate_bounding_box(&a, &b, &c);
-     
-     let triangle_area =edge_function(&a, &b, &c);
-     
-       // Iterate over each pixel in the bounding box
-  for y in min_y..=max_y {
-    for x in min_x..=max_x {
-      let point = Vec3::new(x as f32 + 0.5, y as f32 + 0.5, 0.0);
+    let (a, b, c) = (v1.transformed_position, v2.transformed_position, v3.transformed_position);
+    
+    // Compute two edge vectors
+    let edge1 = v2.position - v1.position;
+    let edge2 = v3.position - v1.position;
 
-      // Calculate barycentric coordinates
-      let (w1, w2, w3) = barycentric_coordinates(&point, &a, &b, &c, triangle_area);
-
-      // Check if the point is inside the triangle
-      if w1 >= 0.0 && w1 <= 1.0 && 
-         w2 >= 0.0 && w2 <= 1.0 &&
-         w3 >= 0.0 && w3 <= 1.0 {
-        // Interpolate normal
-        // let normal = v1.transformed_normal * w1 + v2.transformed_normal * w2 + v3.transformed_normal * w3;
-        let normal = v1.normal * w1 + v2.normal * w2 + v3.normal * w3;
-        let normal = normal.normalize();
-
-        // Calculate lighting intensity
-        let intensity = dot(&normal, &light_dir).max(0.0);
-
-        // Create a gray color and apply lighting
-        let base_color = Color::new(100, 100, 100); // Medium gray
-        let lit_color = base_color * intensity;
-
-        // Interpolate depth
-        let depth = a.z * w1 + b.z * w2 + c.z * w3;
-
-        fragments.push(Fragment::new(point.x as f32, point.y as f32, lit_color, depth));
-      }
+    // Compute the cross product of the edge vectors to get the normal
+    let normal = edge1.cross(&edge2).normalize();
+    
+    // Calculate the center of the triangle
+    let center = (a + b + c) / 3.0;
+    
+    // Calculate the light direction from the origin (0, 0, 0) to the triangle's center
+    let light_dir = center.normalize(); // Light comes from the origin (0, 0, 0)
+    
+    // Perform back-face culling: skip triangles facing away from the camera
+    if normal.dot(&camera_dir) > 0.0 {
+        return fragments; // Skip rendering this triangle
     }
-  }
+
+    let (min_x, min_y, max_x, max_y) = calculate_bounding_box(&a, &b, &c);
+    let triangle_area = edge_function(&a, &b, &c);
+
+    // Iterate over each pixel in the bounding box
+    for y in min_y..=max_y {
+        for x in min_x..=max_x {
+            let point = Vec3::new(x as f32 + 0.5, y as f32 + 0.5, 0.0);
+
+            // Calculate barycentric coordinates
+            let (w1, w2, w3) = barycentric_coordinates(&point, &a, &b, &c, triangle_area);
+
+            // Check if the point is inside the triangle
+            if w1 >= 0.0 && w1 <= 1.0 && 
+               w2 >= 0.0 && w2 <= 1.0 &&
+               w3 >= 0.0 && w3 <= 1.0 {
+                // Interpolate normal
+                let normal = v1.normal * w1 + v2.normal * w2 + v3.normal * w3;
+                let normal = normal.normalize();
+
+                // Calculate lighting intensity
+                let intensity = normal.dot(&light_dir).max(0.05);
+
+                // Create a gray color and apply lighting
+                let base_color = Color::new(100, 100, 100); // Medium gray
+                let lit_color = base_color * intensity;
+
+                // Interpolate depth
+                let depth = a.z * w1 + b.z * w2 + c.z * w3;
+
+                fragments.push(Fragment::new(point.x as f32, point.y as f32, lit_color, depth));
+            }
+        }
+    }
 
     fragments
 }
