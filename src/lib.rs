@@ -1,6 +1,8 @@
 mod internal;
 
 use internal::camera::Camera;
+use internal::entity::skybox::Skybox;
+use internal::entity::vertex::{self, Vertex};
 use internal::object::Obj;
 use minifb::{Window, WindowOptions, Key};
 use nalgebra_glm::Vec3;
@@ -31,14 +33,14 @@ pub fn start() {
       window_height,
       WindowOptions::default()
     ).unwrap();
+    
+    let skybox = Skybox::new(120, 10.0, Color::new(255, 255, 255), Color::new(0, 0, 0));
 
     let mut camera = Camera::new(
         Vec3::new(0.0, 0.0, 100.0), 
-        Vec3::new(10.0, 10.0, 0.0), 
+        Vec3::new(0.0, 0.0, 0.0), 
         Vec3::new(0.0, 1.0, 0.0)
     );
-    
-    framebuffer.set_background_color(Color::new(30, 20, 120));
     
     let translation = Vec3::new(0.0, 0.0, 0.0);
     let rotation = Vec3::new(0.0, 0.0, 0.0);
@@ -46,6 +48,7 @@ pub fn start() {
     
     let obj = Obj::load("./assets/mesh/spaceShip.obj").expect("Failed to load obj");
     let vertex_array = obj.get_vertex_array();
+    let vertex_array : Vec<Vertex> = vec![];
 
     let model_matrix = create_model_matrix(translation, scale, rotation);
     let mut view_matrix = create_view_matrix(camera.eye, camera.center, camera.up);
@@ -61,12 +64,12 @@ pub fn start() {
         handle_input(&window, &mut camera);
         if camera.check_if_changed(){
             view_matrix = create_view_matrix(camera.eye, camera.center, camera.up);
+            framebuffer.clear();
+            framebuffer.set_current_color_hex(0xFFFFFF);
+            let uniforms = Uniforms{ model_matrix , view_matrix, perspective_matrix, viewport_matrix};
+            skybox.render(&mut framebuffer, &uniforms);
+            render(&mut framebuffer, &uniforms, &vertex_array);
         }
-        let uniforms = Uniforms{ model_matrix , view_matrix, perspective_matrix, viewport_matrix};
-
-        framebuffer.set_current_color_hex(0xFFFFFF);
-        framebuffer.clear();
-        render(&mut framebuffer, &uniforms, &vertex_array);
 
         window
          .update_with_buffer(&framebuffer.buffer, framebuffer_width, framebuffer_height)
@@ -102,6 +105,9 @@ fn handle_input(window: &Window, camera: &mut Camera) {
     if window.is_key_down(Key::K) {
         camera.zoom(-ZOOM_SPEED);
     }
+    
+    // print!("eye {} center {} up {}", camera.eye, camera.center, camera.up);
+    // print!("==========================");
     
 }
 

@@ -43,9 +43,24 @@ impl Camera {
     }
 
     pub fn zoom(&mut self, delta: f32) {
-        let direction = (self.center - self.eye).normalize();
-        self.eye += direction * delta;
-        self.has_changed = true;
+        let direction = self.center - self.eye; // Vector pointing from eye to center
+        let magnitude = direction.magnitude();
+    
+        // Minimum allowable distance between eye and center
+        let min_distance = 0.1;
+    
+        if magnitude > min_distance || delta < 0.0 {
+            // Ensure delta doesn't collapse the eye position below min_distance
+            let clamped_delta = if delta > 0.0 {
+                delta.min(magnitude - min_distance)
+            } else {
+                delta
+            };
+    
+            // Apply the zoom
+            self.eye += direction.normalize() * clamped_delta;
+            self.has_changed = true;
+        }
     }
 
     pub fn check_if_changed(&mut self) -> bool {

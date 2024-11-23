@@ -61,7 +61,7 @@ pub fn triangle_flat_shade(v1: &Vertex, v2: &Vertex, v3: &Vertex) -> Vec<Fragmen
      
      let (a, b, c) = (v1.transformed_position, v2.transformed_position, v3.transformed_position);
      
-     let light_dir = Vec3::new(0.0, 1.0, -1.0);
+     let light_dir = Vec3::new(0.0, 0.0, 1.0);
      
      let (min_x, min_y, max_x, max_y) = calculate_bounding_box(&a, &b, &c);
      
