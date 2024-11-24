@@ -37,11 +37,11 @@ pub fn start() {
       WindowOptions::default()
     ).unwrap();
     
-    let skybox = Skybox::new(200, 200.0, Color::new(255, 255, 255), Color::new(0, 0, 50));
+    let skybox = Skybox::new(200, 200.0, Color::new(255, 255, 255), Color::new(50, 50, 100));
 
     let mut camera = Camera::new(
         Vec3::new(0.0, 0.0, 2.0), 
-        Vec3::new(0.0, 0.0, 0.0), 
+        Vec3::new(0.0, 0.0, -1.0), 
         Vec3::new(0.0, 1.0, 0.0)
     );
     
@@ -54,14 +54,13 @@ pub fn start() {
     // Create a list of models with one inline-defined SimpleModel
     let mut models: Vec<Box<dyn Model>> = vec![
         Box::new(SimpleModel {
-            vertex_array: planet_vertices.clone(), // Clone the Arc
+            vertex_array: space_ship_vertices.clone(), // Clone the Arc
             shader: simple_shader,
-            position: Vec3::new(0.0, 0.0, 0.0),
-            scale: 6.0,
+            position: Vec3::new(0.0, 0.0, 1.0),
+            scale: 1.0,
             rotation: Vec3::new(0.0, 0.0, 0.0),
             collision_radius: 5.0,
         }),
-        /*
         Box::new(Planet::new(
             planet_vertices.clone(), // Clone the Arc
             1.0,
@@ -80,7 +79,6 @@ pub fn start() {
             0.0001,
             3.0,
         )),
-         */
     ];
     // let vertex_array = obj.get_vertex_array();
     // let vertex_array : Vec<Vertex> = vec![];
@@ -101,7 +99,7 @@ pub fn start() {
         time += 1;
 
         handle_input(&window, &mut camera);
-
+        
         framebuffer.clear();
         framebuffer.set_current_color(Color::new(255, 255, 255));
 
@@ -109,19 +107,20 @@ pub fn start() {
 
         skybox.render(&mut framebuffer, &perspective_matrix, &view_matrix);
         
-        draw_orbit(&mut framebuffer, 
-            Vec3::new(0.0, 0.0, 0.0),
-            15.0, 
-            &perspective_matrix, 
-            &view_matrix, 
-            &viewport_matrix,
-            20, 
-            Color::new(255, 200, 255)
-        );
+        /* 
+            draw_orbit(&mut framebuffer, 
+                Vec3::new(0.0, 0.0, 0.0),
+                15.0, 
+                &perspective_matrix, 
+                &view_matrix, 
+                &viewport_matrix,
+                20, 
+                Color::new(255, 200, 255)
+            );
+        */
 
         for model in &mut models{
             
-            /*
             if let Some(planet) = model.as_any_mut().downcast_mut::<Planet>() {
                 draw_orbit(
                     &mut framebuffer,
@@ -134,7 +133,6 @@ pub fn start() {
                     Color::new(255,255,255));
                 planet.translate(time);
             }
-             */
             
             let model_matrix = create_model_matrix(model.get_position(), model.get_scale(), model.get_rotation());
 
@@ -143,9 +141,11 @@ pub fn start() {
             render(&mut framebuffer, &uniforms, model.get_vertex_array(), &camera, model.get_shader());
         }
 
+
         window
          .update_with_buffer(&framebuffer.buffer, framebuffer_width, framebuffer_height)
          .unwrap();
+
 
         std::thread::sleep(frame_delay)
     }
@@ -177,9 +177,9 @@ fn handle_input(window: &Window, camera: &mut Camera) {
     if window.is_key_down(Key::K) {
         camera.zoom(-ZOOM_SPEED);
     }
+
     
     // print!("eye {} center {} up {}", camera.eye, camera.center, camera.up);
-    // print!("==========================");
     
 }
 
