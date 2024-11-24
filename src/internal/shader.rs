@@ -17,19 +17,11 @@ pub fn vertex_shader(vertex: &Vertex, transformation_matrix: &Mat4, uniforms: &U
 
   // Perform perspective division
   let w = clip_pos.w;
-  let ndc_position = if w != 0.0 {
-    Vec4::new(
+  let ndc_position = Vec4::new(
     clip_pos.x / w,
     clip_pos.y / w,
     clip_pos.z / w,
-    1.0
-  )} else {
-    Vec4::new(
-    clip_pos.x,
-    clip_pos.y,
-    clip_pos.z,
-    1.0)
-  };
+    1.0);
 
   // Transform normal
   let screen_position = uniforms.viewport_matrix * ndc_position;
@@ -56,6 +48,7 @@ pub fn vertex_shader(vertex: &Vertex, transformation_matrix: &Mat4, uniforms: &U
     normal: vertex.normal,
     tex_coords: vertex.tex_coords,
     color: vertex.color,
+    frustrum_position: ndc_position,
     transformed_position,
     transformed_normal: transformed_normal,
   }

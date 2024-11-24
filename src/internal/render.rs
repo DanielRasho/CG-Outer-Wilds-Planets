@@ -35,16 +35,7 @@ pub fn render(framebuffer: &mut Framebuffer,
     // println!("a: {}, b:{}", vertex_array[1].position, transformed_vertices[1].position);
 
     // Primitive Assembly Stage
-    let mut triangles = Vec::new();
-    for i in (0..transformed_vertices.len()).step_by(3) {
-        if i + 2 < transformed_vertices.len() {
-            triangles.push([
-                transformed_vertices[i].clone(),
-                transformed_vertices[i + 1].clone(),
-                transformed_vertices[i + 2].clone(),
-            ]);
-        }
-    }
+    let triangles = assembly(&transformed_vertices, true);
 
     // Rasterization Stage
     let mut fragments = Vec::new();
@@ -62,6 +53,34 @@ pub fn render(framebuffer: &mut Framebuffer,
             framebuffer.set_current_color(color);
             framebuffer.draw_point(x, y, fragment.depth);
         }
+    }
+}
+
+fn assembly(vertices: &[Vertex], should_optimize: bool) -> Vec<&[Vertex]> {
+    let triangles = vertices.chunks(3);
+
+    if should_optimize {
+        triangles
+            .filter(|triangle_vertices| {
+                let range = -1.0..1.0;
+                let a = &triangle_vertices[0];
+                let b = &triangle_vertices[1];
+                let c = &triangle_vertices[2];
+                let a_in_range = range.contains(&a.frustrum_position.x)
+                    && range.contains(&a.frustrum_position.y)
+                    && range.contains(&a.frustrum_position.z);
+                let b_in_range = range.contains(&b.frustrum_position.x)
+                    && range.contains(&b.frustrum_position.y)
+                    && range.contains(&b.frustrum_position.z);
+                let c_in_range = range.contains(&c.frustrum_position.x)
+                    && range.contains(&c.frustrum_position.y)
+                    && range.contains(&c.frustrum_position.z);
+
+                a_in_range || b_in_range || c_in_range
+            })
+            .collect()
+    } else {
+        triangles.collect()
     }
 }
 
@@ -93,7 +112,12 @@ pub fn draw_orbit(
             let position = Vec3::new(x, y, z);
     
             // Create a new Vertex with the position
-            let mut vertex = Vertex::new(position, Vec3::new(0.0, 1.0, 0.0), Vec2::new(0.0, 0.0));
+            let mut vertex = Vertex::new(
+                position, 
+                Vec3::new(0.0, 1.0, 0.0),
+                Vec2::new(0.0, 0.0),
+                Vec4::new(0.0, 0.0, 0.0, 0.0)
+            );
             
             // Apply the view-projection matrix to the position
             let transformed_position = vp_matrix * position.push(1.0); // Homogeneous transformation
@@ -183,7 +207,7 @@ pub fn create_view_matrix(eye: Vec3, center: Vec3, up: Vec3) -> Mat4 {
 pub fn create_perspective_matrix(window_width: f32, window_height: f32) -> Mat4 {
     let fov = 45.0 * PI / 180.0;
     let aspect_ratio = window_width / window_height;
-    let near = 0.1;
+    let near = 0.5;
     let far = 100.0;
 
     perspective(fov, aspect_ratio, near, far)

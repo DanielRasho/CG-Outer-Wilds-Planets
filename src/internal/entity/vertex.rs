@@ -1,4 +1,4 @@
-use nalgebra_glm::{Vec2, Vec3};
+use nalgebra_glm::{Vec2, Vec3, Vec4};
 use super::color::Color;
 
 #[derive(Clone, Debug)]
@@ -7,28 +7,31 @@ pub struct Vertex {
   pub normal: Vec3,
   pub tex_coords: Vec2,
   pub color: Color,
+  pub frustrum_position: Vec4,
   pub transformed_position: Vec3,
   pub transformed_normal: Vec3,
 }
 
 impl Vertex {
-  pub fn new(position: Vec3, normal: Vec3, tex_coords: Vec2) -> Self {
+  pub fn new(position: Vec3, normal: Vec3, tex_coords: Vec2, frustrum_position: Vec4) -> Self {
     Vertex {
       position,
       normal,
       tex_coords,
       color: Color::black(),
+      frustrum_position,
       transformed_position: position,
       transformed_normal: normal,
     }
   }
 
-  pub fn new_with_color(position: Vec3, normal: Vec3, tex_coords: Vec2, color: Color) -> Self {
+  pub fn new_with_color(position: Vec3, normal: Vec3, tex_coords: Vec2, color: Color ) -> Self {
     Vertex {
       position,
       normal,
       tex_coords,
       color,
+      frustrum_position: Vec4::new(0.0, 0.0, 0.0, 0.0),
       transformed_position: Vec3::new(0.0, 0.0, 0.0),
       transformed_normal: Vec3::new(0.0, 0.0, 0.0),
     }
@@ -47,6 +50,7 @@ impl Default for Vertex {
       normal: Vec3::new(0.0, 1.0, 0.0),
       tex_coords: Vec2::new(0.0, 0.0),
       color: Color::black(),
+      frustrum_position: Vec4::new(0.0, 0.0, 0.0, 0.0),
       transformed_position: Vec3::new(0.0, 0.0, 0.0),
       transformed_normal: Vec3::new(0.0, 1.0, 0.0),
     }
