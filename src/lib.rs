@@ -78,30 +78,32 @@ pub fn start() {
     let perspective_matrix = create_perspective_matrix(window_width as f32, window_height as f32);
     let viewport_matrix = create_viewport_matrix(framebuffer_width as f32, framebuffer_height as f32);
     
+    let mut time : u32 = 0;
+    
     // RENDER LOOP
     while window.is_open() {
         if window.is_key_down(Key::Escape) {
             break;
         }
+        
+        time += 1;
 
         handle_input(&window, &mut camera);
-        if camera.check_if_changed(){
-            framebuffer.clear();
-            framebuffer.set_current_color(Color::new(255, 255, 255));
 
-            view_matrix = create_view_matrix(camera.eye, camera.center, camera.up);
+        framebuffer.clear();
+        framebuffer.set_current_color(Color::new(255, 255, 255));
 
-            skybox.render(&mut framebuffer, &perspective_matrix, &view_matrix);
+        view_matrix = create_view_matrix(camera.eye, camera.center, camera.up);
+
+        skybox.render(&mut framebuffer, &perspective_matrix, &view_matrix);
+        
+        for model in &models{
             
-            for model in &models{
-                
-                let model_matrix = create_model_matrix(model.get_position(), model.get_scale(), model.get_rotation());
+            let model_matrix = create_model_matrix(model.get_position(), model.get_scale(), model.get_rotation());
 
-                let uniforms = Uniforms{ model_matrix , view_matrix, perspective_matrix, viewport_matrix};
-
-                render(&mut framebuffer, &uniforms, model.get_vertex_array(), &camera, model.get_shader());
-            }
-
+            let uniforms = Uniforms{ model_matrix , view_matrix, perspective_matrix, viewport_matrix, time};
+            
+            render(&mut framebuffer, &uniforms, model.get_vertex_array(), &camera, model.get_shader());
         }
 
         window

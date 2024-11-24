@@ -13,7 +13,8 @@ pub struct Uniforms {
     pub model_matrix: Mat4,
     pub view_matrix: Mat4,
     pub perspective_matrix: Mat4,
-    pub viewport_matrix: Mat4
+    pub viewport_matrix: Mat4,
+    pub time: u32
 }
 
 pub fn render(framebuffer: &mut Framebuffer, uniforms: &Uniforms, vertex_array: &[Vertex], camera: &Camera, shader: fn(&Fragment, &Uniforms) -> Color) {
