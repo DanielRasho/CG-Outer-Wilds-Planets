@@ -99,7 +99,7 @@ pub fn start() {
 
                 let uniforms = Uniforms{ model_matrix , view_matrix, perspective_matrix, viewport_matrix};
 
-                render(&mut framebuffer, &uniforms, model.get_vertex_array(), &camera);
+                render(&mut framebuffer, &uniforms, model.get_vertex_array(), &camera, model.get_shader());
             }
 
         }

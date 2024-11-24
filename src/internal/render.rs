@@ -4,8 +4,10 @@ use std::f32::consts::PI;
 use super::camera::{self, Camera};
 use super::entity::vertex::Vertex;
 use super::framebuffer::Framebuffer;
-use super::shader::vertex_shader;
+use super::shader::{self, simple_shader, vertex_shader};
 use super::line::{triangle_wireframe, triangle_flat_shade};
+use super::entity::fragment::Fragment;
+use super::entity::color::Color;
 
 pub struct Uniforms {
     pub model_matrix: Mat4,
@@ -14,7 +16,7 @@ pub struct Uniforms {
     pub viewport_matrix: Mat4
 }
 
-pub fn render(framebuffer: &mut Framebuffer, uniforms: &Uniforms, vertex_array: &[Vertex], camera: &Camera) {
+pub fn render(framebuffer: &mut Framebuffer, uniforms: &Uniforms, vertex_array: &[Vertex], camera: &Camera, shader: fn(&Fragment, &Uniforms) -> Color) {
     // Vertex Shader Stage
     let mut transformed_vertices = Vec::with_capacity(vertex_array.len());
     for vertex in vertex_array {
@@ -49,7 +51,7 @@ pub fn render(framebuffer: &mut Framebuffer, uniforms: &Uniforms, vertex_array: 
         let x = fragment.position.x as usize;
         let y = fragment.position.y as usize;
         if x < framebuffer.width && y < framebuffer.height {
-            let color = fragment.color;
+            let color = shader(&fragment, uniforms);
             framebuffer.set_current_color(color);
             framebuffer.draw_point(x, y, fragment.depth);
         }

@@ -36,5 +36,5 @@ pub fn vertex_shader(vertex: &Vertex, uniforms: &Uniforms) -> Vertex {
 }
 
 pub fn simple_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
-  fragment.color
+  fragment.color * fragment.intensity
 }

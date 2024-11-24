@@ -31,7 +31,7 @@ pub fn line(a: &Vertex, b: &Vertex) -> Vec<Fragment> {
         let depth = a.transformed_position.z * (1.0 - t) + b.transformed_position.z * t;
 
         // Create a fragment at this point
-        fragments.push(Fragment::new(x as f32, y as f32, color, depth));
+        fragments.push(Fragment::new(x as f32, y as f32, color, depth, 1.0));
 
         // Bresenham's decision
         let e2 = 2 * err;
@@ -105,12 +105,11 @@ pub fn triangle_flat_shade(v1: &Vertex, v2: &Vertex, v3: &Vertex, camera_dir: Ve
 
                 // Create a gray color and apply lighting
                 let base_color = Color::new(100, 100, 100); // Medium gray
-                let lit_color = base_color * intensity;
 
                 // Interpolate depth
                 let depth = a.z * w1 + b.z * w2 + c.z * w3;
 
-                fragments.push(Fragment::new(point.x as f32, point.y as f32, lit_color, depth));
+                fragments.push(Fragment::new(point.x as f32, point.y as f32, base_color, depth, intensity));
             }
         }
     }
