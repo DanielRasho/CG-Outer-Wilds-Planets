@@ -11,7 +11,7 @@ use std::time::Duration;
 use std::f32::consts::PI;
 
 use internal::framebuffer::Framebuffer;
-use internal::render::{create_model_matrix, create_perspective_matrix, create_view_matrix, create_viewport_matrix, render, Uniforms};
+use internal::render::{create_model_matrix, create_perspective_matrix, create_view_matrix, create_viewport_matrix, draw_orbit, render, Uniforms};
 use internal::entity::color::Color;
 use internal::model::{Model, SimpleModel, Planet};
 use internal::shader::simple_shader;
@@ -95,6 +95,8 @@ pub fn start() {
         view_matrix = create_view_matrix(camera.eye, camera.center, camera.up);
 
         skybox.render(&mut framebuffer, &perspective_matrix, &view_matrix);
+
+        draw_orbit(&mut framebuffer, Vec3::new(0.0, 0.0, 0.0), 50.0, &perspective_matrix, &view_matrix, 100, Color::new(255, 255, 255));
         
         for model in &models{
             

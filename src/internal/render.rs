@@ -1,11 +1,11 @@
-use nalgebra_glm::{Vec3, Mat4, look_at, perspective};
+use nalgebra_glm::{look_at, perspective, Mat4, Vec2, Vec3, Vec4};
 use std::f32::consts::PI;
 
-use super::camera::{self, Camera};
+use super::camera::Camera;
 use super::entity::vertex::Vertex;
 use super::framebuffer::Framebuffer;
-use super::shader::{self, simple_shader, vertex_shader};
-use super::line::{triangle_wireframe, triangle_flat_shade};
+use super::shader::vertex_shader;
+use super::line::{line, triangle_flat_shade};
 use super::entity::fragment::Fragment;
 use super::entity::color::Color;
 
@@ -56,6 +56,78 @@ pub fn render(framebuffer: &mut Framebuffer, uniforms: &Uniforms, vertex_array: 
             framebuffer.set_current_color(color);
             framebuffer.draw_point(x, y, fragment.depth);
         }
+    }
+}
+
+pub fn draw_orbit(
+    framebuffer: &mut Framebuffer,
+    center: Vec3, 
+    radius: f32, 
+    perspective_matrix: &Mat4, 
+    view_matrix: &Mat4, 
+    segments: usize,
+    color: Color,
+) {
+        framebuffer.set_current_color(color);
+
+        // Create a combined view-projection matrix
+        let vp_matrix = perspective_matrix * view_matrix;
+
+        // Create a vector to store the vertices
+        let mut orbit_vertices = Vec::with_capacity(segments);
+    
+        // Generate vertices for the circle in 3D space and store them in `orbit_vertices`
+        for i in 0..segments {
+            let angle = 2.0 * std::f32::consts::PI * (i as f32 / segments as f32);
+            let x = center.x + radius * angle.cos();
+            let y = center.y; // You can adjust y if you want the circle to tilt
+            let z = center.z + radius * angle.sin();
+    
+            let position = Vec3::new(x, y, z);
+    
+            // Create a new Vertex with the position
+            let mut vertex = Vertex::new(position, Vec3::new(0.0, 1.0, 0.0), Vec2::new(0.0, 0.0));
+            
+            // Apply the view-projection matrix to the position
+            let transformed_position = vp_matrix * position.push(1.0); // Homogeneous transformation
+            vertex.set_transformed(transformed_position.xyz(), Vec3::new(0.0, 0.0, 0.0)); // Set the transformed position
+    
+            orbit_vertices.push(vertex);
+        }
+    
+        // Now we have all the vertices, and we can render the orbit by connecting them with lines
+        for i in 0..segments {
+            let start = &orbit_vertices[i];
+            let end = &orbit_vertices[(i + 1) % segments]; // Loop back to the start for a closed circle
+    
+            // Calculate depth for the start and end points
+            let depth_start = start.transformed_position.z;
+            let depth_end = end.transformed_position.z;
+    
+            // If both points are in front of the camera (depth > 0), we proceed
+            if depth_start > 0.0 && depth_end > 0.0 {
+                let ndc_start_x = start.transformed_position.x / start.transformed_position.z;
+                let ndc_start_y = start.transformed_position.y / start.transformed_position.z;
+                let ndc_end_x = end.transformed_position.x / end.transformed_position.z;
+                let ndc_end_y = end.transformed_position.y / end.transformed_position.z;
+    
+                // Map the NDC coordinates to screen space
+                let screen_start_x = ((ndc_start_x + 1.0) * 0.5 * framebuffer.width as f32) as isize;
+                let screen_start_y = ((1.0 - ndc_start_y) * 0.5 * framebuffer.height as f32) as isize;
+                let screen_end_x = ((ndc_end_x + 1.0) * 0.5 * framebuffer.width as f32) as isize;
+                let screen_end_y = ((1.0 - ndc_end_y) * 0.5 * framebuffer.height as f32) as isize;
+    
+                // Ensure the points are within the framebuffer bounds
+                if screen_start_x >= 0 && screen_start_x < framebuffer.width as isize &&
+                    screen_start_y >= 0 && screen_start_y < framebuffer.height as isize &&
+                    screen_end_x >= 0 && screen_end_x < framebuffer.width as isize &&
+                    screen_end_y >= 0 && screen_end_y < framebuffer.height as isize {
+    
+                    // Use the framebuffer's draw_point function
+                    framebuffer.draw_point(screen_start_x as usize, screen_start_y as usize, depth_start);
+                    framebuffer.draw_point(screen_end_x as usize, screen_end_y as usize, depth_end);
+                }
+            }
     }
 }
 
