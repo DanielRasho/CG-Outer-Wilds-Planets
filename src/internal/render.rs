@@ -25,8 +25,9 @@ pub fn render(framebuffer: &mut Framebuffer,
     shader: fn(&Fragment, &Uniforms) -> Color) {
     // Vertex Shader Stage
     let mut transformed_vertices = Vec::with_capacity(vertex_array.len());
+    let tranformation_matrix = uniforms.perspective_matrix * uniforms.view_matrix * uniforms.model_matrix;
     for vertex in vertex_array.iter() {
-        let transformed = vertex_shader(vertex, uniforms);
+        let transformed = vertex_shader(vertex, &tranformation_matrix, &uniforms);
         transformed_vertices.push(transformed);
     }
     // println!("{}", uniforms.model_matrix);
@@ -112,8 +113,9 @@ pub fn draw_orbit(
 
         // Vertex Shader Stage
         let mut transformed_vertices = Vec::with_capacity(orbit_vertices.len());
+        let tranformation_matrix = uniforms.perspective_matrix * uniforms.view_matrix * uniforms.model_matrix;
         for vertex in orbit_vertices {
-            let transformed = vertex_shader(&vertex, &uniforms);
+            let transformed = vertex_shader(&vertex, &tranformation_matrix, &uniforms);
             transformed_vertices.push(transformed);
         }
     
