@@ -65,6 +65,7 @@ pub fn draw_orbit(
     radius: f32, 
     perspective_matrix: &Mat4, 
     view_matrix: &Mat4, 
+    viewport_matrix: &Mat4,
     segments: usize,
     color: Color,
 ) {
@@ -94,40 +95,39 @@ pub fn draw_orbit(
     
             orbit_vertices.push(vertex);
         }
+        
+        
+        let uniforms = Uniforms{ 
+            model_matrix: create_model_matrix(Vec3::new(0.0, 0.0, 0.0) , 1.0, Vec3::new(0.0, 0.0, 0.0)) , 
+            view_matrix: *view_matrix, 
+            perspective_matrix: *perspective_matrix,
+            viewport_matrix: *viewport_matrix,
+            time: 0
+        };
+
+        // Vertex Shader Stage
+        let mut transformed_vertices = Vec::with_capacity(orbit_vertices.len());
+        for vertex in orbit_vertices {
+            let transformed = vertex_shader(&vertex, &uniforms);
+            transformed_vertices.push(transformed);
+        }
     
+    
+        let mut fragments = Vec::new();
         // Now we have all the vertices, and we can render the orbit by connecting them with lines
         for i in 0..segments {
-            let start = &orbit_vertices[i];
-            let end = &orbit_vertices[(i + 1) % segments]; // Loop back to the start for a closed circle
-    
-            // Calculate depth for the start and end points
-            let depth_start = start.transformed_position.z;
-            let depth_end = end.transformed_position.z;
-    
-            // If both points are in front of the camera (depth > 0), we proceed
-            if depth_start > 0.0 && depth_end > 0.0 {
-                let ndc_start_x = start.transformed_position.x / start.transformed_position.z;
-                let ndc_start_y = start.transformed_position.y / start.transformed_position.z;
-                let ndc_end_x = end.transformed_position.x / end.transformed_position.z;
-                let ndc_end_y = end.transformed_position.y / end.transformed_position.z;
-    
-                // Map the NDC coordinates to screen space
-                let screen_start_x = ((ndc_start_x + 1.0) * 0.5 * framebuffer.width as f32) as isize;
-                let screen_start_y = ((1.0 - ndc_start_y) * 0.5 * framebuffer.height as f32) as isize;
-                let screen_end_x = ((ndc_end_x + 1.0) * 0.5 * framebuffer.width as f32) as isize;
-                let screen_end_y = ((1.0 - ndc_end_y) * 0.5 * framebuffer.height as f32) as isize;
-    
-                // Ensure the points are within the framebuffer bounds
-                if screen_start_x >= 0 && screen_start_x < framebuffer.width as isize &&
-                    screen_start_y >= 0 && screen_start_y < framebuffer.height as isize &&
-                    screen_end_x >= 0 && screen_end_x < framebuffer.width as isize &&
-                    screen_end_y >= 0 && screen_end_y < framebuffer.height as isize {
-    
-                    // Use the framebuffer's draw_point function
-                    framebuffer.draw_point(screen_start_x as usize, screen_start_y as usize, depth_start);
-                    framebuffer.draw_point(screen_end_x as usize, screen_end_y as usize, depth_end);
-                }
-            }
+            let start = &transformed_vertices[i];
+            let end = &transformed_vertices[(i + 1) % segments]; // Loop back to the start for a closed circle
+            fragments.extend(line(start, end));
+    }
+        
+    // Fragment Processing Stage
+    for fragment in fragments {
+        let x = fragment.position.x as usize;
+        let y = fragment.position.y as usize;
+        if x < framebuffer.width && y < framebuffer.height {
+            framebuffer.draw_point(x, y, fragment.depth);
+        }
     }
 }
 

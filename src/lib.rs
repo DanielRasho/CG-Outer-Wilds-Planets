@@ -96,7 +96,7 @@ pub fn start() {
 
         skybox.render(&mut framebuffer, &perspective_matrix, &view_matrix);
 
-        draw_orbit(&mut framebuffer, Vec3::new(0.0, 0.0, 0.0), 50.0, &perspective_matrix, &view_matrix, 100, Color::new(255, 255, 255));
+        draw_orbit(&mut framebuffer, Vec3::new(0.0, 0.0, 0.0), 50.0, &perspective_matrix, &view_matrix, &viewport_matrix, 50, Color::new(255, 255, 255));
         
         for model in &models{
             
