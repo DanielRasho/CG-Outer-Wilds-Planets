@@ -7,6 +7,7 @@ use internal::object::Obj;
 use minifb::{Window, WindowOptions, Key};
 use nalgebra_glm::Vec3;
 
+use std::sync::Arc;
 use std::time::Duration;
 use std::f32::consts::PI;
 
@@ -47,29 +48,38 @@ pub fn start() {
     let space_ship_obj = Obj::load("./assets/mesh/spaceShip.obj").expect("Failed to load obj");
     let planet_obj = Obj::load("./assets/mesh/planet.obj").expect("Failed to load obj");
     
-    let space_ship_vertices = space_ship_obj.get_vertex_array();
-    let planet_vertices = planet_obj.get_vertex_array();
+    let space_ship_vertices = Arc::new(space_ship_obj.get_vertex_array());
+    let planet_vertices = Arc::new(planet_obj.get_vertex_array());
     
     // Create a list of models with one inline-defined SimpleModel
     let models: Vec<Box<dyn Model>> = vec![
         Box::new(SimpleModel {
-            vertex_array: &space_ship_vertices,
+            vertex_array: space_ship_vertices.clone(), // Clone the Arc
             shader: simple_shader,
             position: Vec3::new(0.0, 0.0, 0.0),
             scale: 1.0,
             rotation: Vec3::new(0.0, 0.0, 0.0),
             collision_radius: 5.0,
         }),
-        Box::new(SimpleModel {
-            vertex_array: &space_ship_vertices,
-            shader: simple_shader,
-            position: Vec3::new(-5.0, 0.0, 0.0),
-            scale: 1.0,
-            rotation: Vec3::new(0.0, 0.0, 0.0),
-            collision_radius: 5.0,
-        }),
+        Box::new(Planet::new(
+            planet_vertices.clone(), // Clone the Arc
+            1.0,
+            simple_shader,
+            20.0,
+            0.0,
+            2.0,
+            3.0,
+        )),
+        Box::new(Planet::new(
+            planet_vertices.clone(), // Clone the Arc
+            4.0,
+            simple_shader,
+            50.0,
+            0.0,
+            4.0,
+            3.0,
+        )),
     ];
-
     // let vertex_array = obj.get_vertex_array();
     // let vertex_array : Vec<Vertex> = vec![];
 
@@ -96,9 +106,19 @@ pub fn start() {
 
         skybox.render(&mut framebuffer, &perspective_matrix, &view_matrix);
 
-        draw_orbit(&mut framebuffer, Vec3::new(0.0, 0.0, 0.0), 50.0, &perspective_matrix, &view_matrix, &viewport_matrix, 50, Color::new(255, 255, 255));
-        
         for model in &models{
+            
+            if let Some(planet) = model.as_any().downcast_ref::<Planet>() {
+                draw_orbit(
+                    &mut framebuffer,
+                    Vec3::new(0.0, 0.0, 0.0),
+                    planet.orbit_radius,
+                    &perspective_matrix,
+                    &view_matrix,
+                    &viewport_matrix, 
+                    50, 
+                    Color::new(255,255,255));
+            }
             
             let model_matrix = create_model_matrix(model.get_position(), model.get_scale(), model.get_rotation());
 

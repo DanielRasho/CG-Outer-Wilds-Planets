@@ -1,5 +1,6 @@
 use nalgebra_glm::{look_at, perspective, Mat4, Vec2, Vec3, Vec4};
 use std::f32::consts::PI;
+use std::sync::Arc;
 
 use super::camera::Camera;
 use super::entity::vertex::Vertex;
@@ -17,10 +18,14 @@ pub struct Uniforms {
     pub time: u32
 }
 
-pub fn render(framebuffer: &mut Framebuffer, uniforms: &Uniforms, vertex_array: &[Vertex], camera: &Camera, shader: fn(&Fragment, &Uniforms) -> Color) {
+pub fn render(framebuffer: &mut Framebuffer, 
+    uniforms: &Uniforms,
+    vertex_array: Arc<Vec<Vertex>>,
+    camera: &Camera, 
+    shader: fn(&Fragment, &Uniforms) -> Color) {
     // Vertex Shader Stage
     let mut transformed_vertices = Vec::with_capacity(vertex_array.len());
-    for vertex in vertex_array {
+    for vertex in vertex_array.iter() {
         let transformed = vertex_shader(vertex, uniforms);
         transformed_vertices.push(transformed);
     }

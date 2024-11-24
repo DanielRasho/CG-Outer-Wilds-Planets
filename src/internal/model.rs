@@ -1,23 +1,26 @@
+use std::sync::Arc;
+use std::any::Any;
+use nalgebra_glm::Vec3;
+
 use super::entity::vertex::Vertex;
 use super::entity::fragment::Fragment;
 use super::render::Uniforms;
 use super::entity::color::Color;
 
-use nalgebra_glm::Vec3;
-
-// Trait definition with explicit lifetime
-pub trait Model<'a> {
-    fn get_vertex_array(&self) -> &'a [Vertex];
+// Trait definition
+pub trait Model {
+    fn get_vertex_array(&self) -> Arc<Vec<Vertex>>;
     fn get_shader(&self) -> fn(&Fragment, &Uniforms) -> Color;
     fn get_position(&self) -> Vec3;
     fn get_scale(&self) -> f32;
     fn get_rotation(&self) -> Vec3;
     fn get_colision_radius(&self) -> f32;
+    fn as_any(&self) -> &dyn Any; // Add this method
 }
 
 // SimpleModel struct
-pub struct SimpleModel<'a> {
-    pub vertex_array: &'a [Vertex],
+pub struct SimpleModel {
+    pub vertex_array: Arc<Vec<Vertex>>, // Change to Arc<Vec<Vertex>>
     pub shader: fn(&Fragment, &Uniforms) -> Color,
     pub position: Vec3,
     pub scale: f32,
@@ -26,51 +29,54 @@ pub struct SimpleModel<'a> {
 }
 
 // Implement the Model trait for SimpleModel
-impl<'a> Model<'a> for SimpleModel<'a> {
-    fn get_vertex_array(&self) -> &'a [Vertex] {
-        self.vertex_array
+impl Model for SimpleModel {
+    fn get_vertex_array(&self) -> Arc<Vec<Vertex>> {
+        Arc::clone(&self.vertex_array) // Clone the Arc to return a reference-counted version
     }
 
     fn get_shader(&self) -> fn(&Fragment, &Uniforms) -> Color {
         self.shader
     }
-    
+
     fn get_position(&self) -> Vec3 {
         self.position
     }
 
-    fn get_scale(&self) -> f32{
+    fn get_scale(&self) -> f32 {
         self.scale
     }
 
-    fn get_rotation(&self) -> Vec3{
+    fn get_rotation(&self) -> Vec3 {
         self.rotation
     }
 
     fn get_colision_radius(&self) -> f32 {
-        self.collision_radius        
+        self.collision_radius
+    }
+    
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
 // Planet struct
-pub struct Planet<'a> {
-    pub vertex_array: &'a [Vertex],
+pub struct Planet {
+    pub vertex_array: Arc<Vec<Vertex>>, // Change to Arc<Vec<Vertex>>
     pub shader: fn(&Fragment, &Uniforms) -> Color,
     pub position: Vec3,
     pub scale: f32,
     pub rotation: Vec3,
     pub collision_radius: f32,
 
-    pub orbit_offset: f32,
     pub orbit_angle: f32,
     pub orbit_speed: f32,
-    pub orbit_radius: f32
+    pub orbit_radius: f32,
 }
 
 // Implement the Model trait for Planet
-impl<'a> Model<'a> for Planet<'a> {
-    fn get_vertex_array(&self) -> &'a [Vertex] {
-        self.vertex_array
+impl Model for Planet {
+    fn get_vertex_array(&self) -> Arc<Vec<Vertex>> {
+        Arc::clone(&self.vertex_array) // Clone the Arc to return a reference-counted version
     }
 
     fn get_shader(&self) -> fn(&Fragment, &Uniforms) -> Color {
@@ -81,15 +87,51 @@ impl<'a> Model<'a> for Planet<'a> {
         self.position
     }
 
-    fn get_scale(&self) -> f32{
+    fn get_scale(&self) -> f32 {
         self.scale
     }
 
-    fn get_rotation(&self) -> Vec3{
+    fn get_rotation(&self) -> Vec3 {
         self.rotation
     }
 
     fn get_colision_radius(&self) -> f32 {
-        self.collision_radius        
+        self.collision_radius
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+// Planet implementation with new and translate methods
+impl Planet {
+    pub fn new(
+        vertex_array: Arc<Vec<Vertex>>, // Use Arc here
+        scale: f32,
+        shader: fn(&Fragment, &Uniforms) -> Color,
+        orbit_radius: f32,
+        orbit_angle: f32,
+        orbit_speed: f32,
+        collision_radius: f32,
+    ) -> Self {
+        // Calculate initial position based on orbit parameters
+        let x = orbit_radius * orbit_angle.cos();
+        let z = orbit_radius * orbit_angle.sin();
+        let position = Vec3::new(x, 0.0, z);
+
+        let rotation = Vec3::new(0.0, 0.0, 0.0);
+
+        Planet {
+            vertex_array,
+            shader,
+            position,
+            scale,
+            rotation,
+            collision_radius,
+            orbit_angle,
+            orbit_speed,
+            orbit_radius,
+        }
     }
 }
