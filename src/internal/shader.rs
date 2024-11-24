@@ -1,6 +1,8 @@
 use nalgebra_glm::{Vec3, Vec4};
 use super::entity::vertex::Vertex;
+use super::entity::fragment::Fragment;
 use super::render::Uniforms;
+use super::entity::color::Color;
 
 pub fn vertex_shader(vertex: &Vertex, uniforms: &Uniforms) -> Vertex {
   // Transform position
@@ -31,4 +33,8 @@ pub fn vertex_shader(vertex: &Vertex, uniforms: &Uniforms) -> Vertex {
     transformed_position,
     transformed_normal: vertex.normal,
   }
+}
+
+pub fn simple_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
+  fragment.color
 }

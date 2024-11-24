@@ -13,6 +13,8 @@ use std::f32::consts::PI;
 use internal::framebuffer::Framebuffer;
 use internal::render::{create_model_matrix, create_perspective_matrix, create_view_matrix, create_viewport_matrix, render, Uniforms};
 use internal::entity::color::Color;
+use internal::model::{Model, SimpleModel, Planet};
+use internal::shader::simple_shader;
 
 
 pub fn start() {
@@ -34,7 +36,7 @@ pub fn start() {
       WindowOptions::default()
     ).unwrap();
     
-    let skybox = Skybox::new(120, 10.0, Color::new(255, 255, 255), Color::new(0, 0, 50));
+    let skybox = Skybox::new(200, 200.0, Color::new(255, 255, 255), Color::new(0, 0, 50));
 
     let mut camera = Camera::new(
         Vec3::new(0.0, 0.0, 100.0), 
@@ -42,15 +44,36 @@ pub fn start() {
         Vec3::new(0.0, 1.0, 0.0)
     );
     
-    let translation = Vec3::new(0.0, 0.0, 0.0);
-    let rotation = Vec3::new(0.0, 0.0, 0.0);
-    let scale = 1.0f32;
+    let space_ship_obj = Obj::load("./assets/mesh/spaceShip.obj").expect("Failed to load obj");
+    let planet_obj = Obj::load("./assets/mesh/planet.obj").expect("Failed to load obj");
     
-    let obj = Obj::load("./assets/mesh/spaceShip.obj").expect("Failed to load obj");
-    let vertex_array = obj.get_vertex_array();
+    let space_ship_vertices = space_ship_obj.get_vertex_array();
+    let planet_vertices = planet_obj.get_vertex_array();
+    
+    // Create a list of models with one inline-defined SimpleModel
+    let models: Vec<Box<dyn Model>> = vec![
+        Box::new(SimpleModel {
+            vertex_array: &space_ship_vertices,
+            shader: simple_shader,
+            position: Vec3::new(0.0, 0.0, 0.0),
+            scale: 1.0,
+            rotation: Vec3::new(0.0, 0.0, 0.0),
+            collision_radius: 5.0,
+        }),
+        Box::new(SimpleModel {
+            vertex_array: &space_ship_vertices,
+            shader: simple_shader,
+            position: Vec3::new(-5.0, 0.0, 0.0),
+            scale: 1.0,
+            rotation: Vec3::new(0.0, 0.0, 0.0),
+            collision_radius: 5.0,
+        }),
+    ];
+
+    // let vertex_array = obj.get_vertex_array();
     // let vertex_array : Vec<Vertex> = vec![];
 
-    let model_matrix = create_model_matrix(translation, scale, rotation);
+    let model_matrix = create_model_matrix(Vec3::new(0.0, 0.0, 0.0), 1.0, Vec3::new(0.0, 0.0, 0.0));
     let mut view_matrix = create_view_matrix(camera.eye, camera.center, camera.up);
     let perspective_matrix = create_perspective_matrix(window_width as f32, window_height as f32);
     let viewport_matrix = create_viewport_matrix(framebuffer_width as f32, framebuffer_height as f32);
@@ -63,12 +86,24 @@ pub fn start() {
 
         handle_input(&window, &mut camera);
         if camera.check_if_changed(){
-            view_matrix = create_view_matrix(camera.eye, camera.center, camera.up);
             framebuffer.clear();
-            framebuffer.set_current_color_hex(0xFFFFFF);
+            framebuffer.set_current_color(Color::new(255, 255, 255));
+
+            view_matrix = create_view_matrix(camera.eye, camera.center, camera.up);
+            
             let uniforms = Uniforms{ model_matrix , view_matrix, perspective_matrix, viewport_matrix};
+            
             skybox.render(&mut framebuffer, &uniforms);
-            render(&mut framebuffer, &uniforms, &vertex_array, &camera);
+            
+            for model in &models{
+                
+                let model_matrix = create_model_matrix(model.get_position(), model.get_scale(), model.get_rotation());
+
+                let uniforms = Uniforms{ model_matrix , view_matrix, perspective_matrix, viewport_matrix};
+
+                render(&mut framebuffer, &uniforms, model.get_vertex_array(), &camera);
+            }
+
         }
 
         window

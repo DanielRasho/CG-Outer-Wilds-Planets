@@ -2,7 +2,7 @@ use nalgebra_glm::{dot, Vec3};
 use rand::distributions::uniform;
 
 use super::entity::color::Color;
-use super::fragment::{self, Fragment};
+use super::entity::fragment::{self, Fragment};
 use super::entity::vertex::Vertex;
 use super::render::Uniforms;
 

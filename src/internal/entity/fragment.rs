@@ -1,7 +1,7 @@
 // fragment.rs
 
 use nalgebra_glm::Vec2;
-use super::entity::color::Color;
+use super::color::Color;
 
 pub struct Fragment {
     pub position: Vec2,

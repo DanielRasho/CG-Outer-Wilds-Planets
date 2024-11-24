@@ -1,4 +1,4 @@
-use nalgebra_glm::Vec3;
+use nalgebra_glm::{Vec3, Mat4};
 use super::color::Color;
 use super::super::framebuffer::Framebuffer;
 use super::super::render::Uniforms;
