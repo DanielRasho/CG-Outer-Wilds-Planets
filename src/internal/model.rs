@@ -12,6 +12,7 @@ pub trait Model<'a> {
     fn get_position(&self) -> Vec3;
     fn get_scale(&self) -> f32;
     fn get_rotation(&self) -> Vec3;
+    fn get_colision_radius(&self) -> f32;
 }
 
 // SimpleModel struct
@@ -45,6 +46,10 @@ impl<'a> Model<'a> for SimpleModel<'a> {
     fn get_rotation(&self) -> Vec3{
         self.rotation
     }
+
+    fn get_colision_radius(&self) -> f32 {
+        self.collision_radius        
+    }
 }
 
 // Planet struct
@@ -54,7 +59,6 @@ pub struct Planet<'a> {
     pub position: Vec3,
     pub scale: f32,
     pub rotation: Vec3,
-    pub rotation_speed: Vec3,
     pub collision_radius: f32,
 
     pub orbit_offset: f32,
@@ -83,5 +87,9 @@ impl<'a> Model<'a> for Planet<'a> {
 
     fn get_rotation(&self) -> Vec3{
         self.rotation
+    }
+
+    fn get_colision_radius(&self) -> f32 {
+        self.collision_radius        
     }
 }
