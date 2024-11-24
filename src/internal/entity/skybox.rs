@@ -47,7 +47,7 @@ impl Skybox {
     /// - `framebuffer`: A mutable slice representing the framebuffer.
     /// - `width`: Width of the framebuffer.
     /// - `height`: Height of the framebuffer.
-    pub fn render(&self, framebuffer: &mut Framebuffer, uniforms: &Uniforms) {
+    pub fn render(&self, framebuffer: &mut Framebuffer, perspective_matrix: &Mat4, view_matrix: &Mat4) {
         let background_color = self.space_color.to_hex();
         let star_color = self.stars_color.to_hex();
         // Fill the background with space_color
@@ -55,7 +55,7 @@ impl Skybox {
             *pixel = background_color;
         }
         // Combine view and projection matrices
-        let vp_matrix = uniforms.perspective_matrix * uniforms.view_matrix;
+        let vp_matrix = perspective_matrix * view_matrix;
 
         // Render each star
         for star in &self.stars {

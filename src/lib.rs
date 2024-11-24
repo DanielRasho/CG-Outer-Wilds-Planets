@@ -90,10 +90,8 @@ pub fn start() {
             framebuffer.set_current_color(Color::new(255, 255, 255));
 
             view_matrix = create_view_matrix(camera.eye, camera.center, camera.up);
-            
-            let uniforms = Uniforms{ model_matrix , view_matrix, perspective_matrix, viewport_matrix};
-            
-            skybox.render(&mut framebuffer, &uniforms);
+
+            skybox.render(&mut framebuffer, &perspective_matrix, &view_matrix);
             
             for model in &models{
                 
