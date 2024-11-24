@@ -5,7 +5,7 @@ use internal::entity::skybox::Skybox;
 use internal::entity::vertex::{self, Vertex};
 use internal::object::Obj;
 use minifb::{Window, WindowOptions, Key};
-use nalgebra_glm::Vec3;
+use nalgebra_glm::{Mat4, Vec3};
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -40,9 +40,11 @@ pub fn start() {
     let skybox = Skybox::new(200, 200.0, Color::new(255, 255, 255), Color::new(50, 50, 100));
 
     let mut camera = Camera::new(
-        Vec3::new(0.0, 0.0, 2.0), 
+        Vec3::new(0.0, 0.0, 4.0), 
         Vec3::new(0.0, 0.0, -1.0), 
-        Vec3::new(0.0, 1.0, 0.0)
+        Vec3::new(0.0, 1.0, 0.0),
+        3.0,
+        10.0
     );
     
     let space_ship_obj = Obj::load("./assets/mesh/spaceShip.obj").expect("Failed to load obj");
@@ -54,7 +56,7 @@ pub fn start() {
     // Create a list of models with one inline-defined SimpleModel
     let mut models: Vec<Box<dyn Model>> = vec![
         Box::new(SimpleModel {
-            vertex_array: space_ship_vertices.clone(), // Clone the Arc
+            vertex_array: planet_vertices.clone(), // Clone the Arc
             shader: simple_shader,
             position: Vec3::new(0.0, 0.0, 1.0),
             scale: 1.0,
@@ -67,7 +69,7 @@ pub fn start() {
             simple_shader,
             20.0,
             0.0,
-            0.0001,
+            0.00001,
             3.0,
         )),
         Box::new(Planet::new(
@@ -76,15 +78,14 @@ pub fn start() {
             simple_shader,
             50.0,
             0.0,
-            0.0001,
+            0.00001,
             3.0,
         )),
     ];
     // let vertex_array = obj.get_vertex_array();
     // let vertex_array : Vec<Vertex> = vec![];
 
-    let owo = create_model_matrix(Vec3::new(0.0, 0.0, 0.0), 1.0, Vec3::new(0.0, 0.0, 0.0));
-    let mut view_matrix = create_view_matrix(camera.eye, camera.center, camera.up);
+    let mut view_matrix : Mat4;
     let perspective_matrix = create_perspective_matrix(window_width as f32, window_height as f32);
     let viewport_matrix = create_viewport_matrix(framebuffer_width as f32, framebuffer_height as f32);
     
@@ -98,7 +99,9 @@ pub fn start() {
         
         time += 1;
 
-        handle_input(&window, &mut camera);
+        let subject = models.get_mut(0).expect("Subject not found."); // OR SOMETHING LIKE THAT
+
+        handle_input(&window, &mut camera, &mut **subject); // MODIFY THE CAMERA AND SUBJECT POSITION
         
         framebuffer.clear();
         framebuffer.set_current_color(Color::new(255, 255, 255));
@@ -122,15 +125,17 @@ pub fn start() {
         for model in &mut models{
             
             if let Some(planet) = model.as_any_mut().downcast_mut::<Planet>() {
-                draw_orbit(
-                    &mut framebuffer,
-                    Vec3::new(0.0, 0.0, 0.0),
-                    planet.orbit_radius,
-                    &perspective_matrix,
-                    &view_matrix,
-                    &viewport_matrix, 
-                    50, 
-                    Color::new(255,255,255));
+                /*
+                    draw_orbit(
+                        &mut framebuffer,
+                        Vec3::new(0.0, 0.0, 0.0),
+                        planet.orbit_radius,
+                        &perspective_matrix,
+                        &view_matrix,
+                        &viewport_matrix, 
+                        50, 
+                        Color::new(255,255,255));
+                 */
                 planet.translate(time);
             }
             
@@ -151,31 +156,66 @@ pub fn start() {
     }
 }
 
-fn handle_input(window: &Window, camera: &mut Camera) {
+fn handle_input(window: &Window, camera: &mut Camera, subject: &mut dyn Model) {
 
     const ROTATION_SPEED : f32 = PI /20.0;
     const ZOOM_SPEED : f32 = 1.0;
+    const TRANSLATE_STEP : f32 = 0.3;
 
     // camera orbit controls
-    if window.is_key_down(Key::Right) {
+    if window.is_key_down(Key::D) {
         camera.orbit(ROTATION_SPEED, 0.0);
     }
-    if window.is_key_down(Key::Left) {
+    if window.is_key_down(Key::A) {
         camera.orbit(-ROTATION_SPEED, 0.0);
     }
-    if window.is_key_down(Key::Down) {
+    if window.is_key_down(Key::S) {
         camera.orbit(0.0, -ROTATION_SPEED);
     }
-    if window.is_key_down(Key::Up) {
+    if window.is_key_down(Key::W) {
         camera.orbit(0.0, ROTATION_SPEED);
     }
 
     // camera zoom
-    if window.is_key_down(Key::J) {
+    if window.is_key_down(Key::Q) {
         camera.zoom(ZOOM_SPEED);
     }
-    if window.is_key_down(Key::K) {
+    if window.is_key_down(Key::E) {
         camera.zoom(-ZOOM_SPEED);
+    }
+
+    let mut subject_position = subject.get_position();
+    // Model controls
+    if window.is_key_down(Key::J) {
+        subject_position.x -= TRANSLATE_STEP;
+        subject.set_position(subject_position);
+        camera.change_center(subject_position);
+    }
+    if window.is_key_down(Key::L) {
+        subject_position.x += TRANSLATE_STEP;
+        subject.set_position(subject_position);
+        camera.change_center(subject_position);
+    }
+    if window.is_key_down(Key::K) {
+        subject_position.z -= TRANSLATE_STEP;
+        subject.set_position(subject_position);
+        camera.change_center(subject_position);
+    }
+    if window.is_key_down(Key::I) {
+        subject_position.z += TRANSLATE_STEP;
+        subject.set_position(subject_position);
+        camera.change_center(subject_position);
+    }
+
+    if window.is_key_down(Key::U) {
+        subject_position.y -= TRANSLATE_STEP;
+        subject.set_position(subject_position);
+        camera.change_center(subject_position);
+    }
+    if window.is_key_down(Key::O) {
+        subject_position.y += TRANSLATE_STEP;
+        subject.set_position(subject_position);
+        camera.change_center(subject_position);
     }
 
     

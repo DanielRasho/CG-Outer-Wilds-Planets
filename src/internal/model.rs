@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use std::any::Any;
-use nalgebra_glm::Vec3;
+use nalgebra_glm::{Vec3};
 
 use super::entity::vertex::Vertex;
 use super::entity::fragment::Fragment;
@@ -12,6 +12,7 @@ pub trait Model {
     fn get_vertex_array(&self) -> Arc<Vec<Vertex>>;
     fn get_shader(&self) -> fn(&Fragment, &Uniforms) -> Color;
     fn get_position(&self) -> Vec3;
+    fn set_position(&mut self, position: Vec3);
     fn get_scale(&self) -> f32;
     fn get_rotation(&self) -> Vec3;
     fn get_colision_radius(&self) -> f32;
@@ -41,6 +42,10 @@ impl Model for SimpleModel {
 
     fn get_position(&self) -> Vec3 {
         self.position
+    }
+
+    fn set_position(&mut self, position: Vec3){
+        self.position = position;
     }
 
     fn get_scale(&self) -> f32 {
@@ -90,6 +95,10 @@ impl Model for Planet {
 
     fn get_position(&self) -> Vec3 {
         self.position
+    }
+
+    fn set_position(&mut self, position: Vec3){
+        self.position = position;
     }
 
     fn get_scale(&self) -> f32 {
