@@ -16,6 +16,7 @@ pub trait Model {
     fn get_rotation(&self) -> Vec3;
     fn get_colision_radius(&self) -> f32;
     fn as_any(&self) -> &dyn Any; // Add this method
+    fn as_any_mut(&mut self) -> &mut dyn Any; // Add this method for mutable access
 }
 
 // SimpleModel struct
@@ -55,6 +56,10 @@ impl Model for SimpleModel {
     }
     
     fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
 }
@@ -102,6 +107,10 @@ impl Model for Planet {
     fn as_any(&self) -> &dyn Any {
         self
     }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
 }
 
 // Planet implementation with new and translate methods
@@ -133,5 +142,17 @@ impl Planet {
             orbit_speed,
             orbit_radius,
         }
+    }
+    pub fn translate(&mut self, delta_time: u32) {
+        // Update orbit angle based on orbit speed and time step
+        self.orbit_angle += self.orbit_speed * delta_time as f32;
+
+        // Ensure the angle stays within the range [0, 2π] to prevent overflow
+        self.orbit_angle %= std::f32::consts::TAU;
+
+        // Recalculate position based on the updated orbit angle
+        let x = self.orbit_radius * self.orbit_angle.cos();
+        let z = self.orbit_radius * self.orbit_angle.sin();
+        self.position = Vec3::new(x, self.position.y, z);
     }
 }

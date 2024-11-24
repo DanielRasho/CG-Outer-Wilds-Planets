@@ -52,7 +52,7 @@ pub fn start() {
     let planet_vertices = Arc::new(planet_obj.get_vertex_array());
     
     // Create a list of models with one inline-defined SimpleModel
-    let models: Vec<Box<dyn Model>> = vec![
+    let mut models: Vec<Box<dyn Model>> = vec![
         Box::new(SimpleModel {
             vertex_array: space_ship_vertices.clone(), // Clone the Arc
             shader: simple_shader,
@@ -67,7 +67,7 @@ pub fn start() {
             simple_shader,
             20.0,
             0.0,
-            2.0,
+            0.0001,
             3.0,
         )),
         Box::new(Planet::new(
@@ -76,7 +76,7 @@ pub fn start() {
             simple_shader,
             50.0,
             0.0,
-            4.0,
+            0.0001,
             3.0,
         )),
     ];
@@ -106,9 +106,9 @@ pub fn start() {
 
         skybox.render(&mut framebuffer, &perspective_matrix, &view_matrix);
 
-        for model in &models{
+        for model in &mut models{
             
-            if let Some(planet) = model.as_any().downcast_ref::<Planet>() {
+            if let Some(planet) = model.as_any_mut().downcast_mut::<Planet>() {
                 draw_orbit(
                     &mut framebuffer,
                     Vec3::new(0.0, 0.0, 0.0),
@@ -118,6 +118,7 @@ pub fn start() {
                     &viewport_matrix, 
                     50, 
                     Color::new(255,255,255));
+                planet.translate(time);
             }
             
             let model_matrix = create_model_matrix(model.get_position(), model.get_scale(), model.get_rotation());
