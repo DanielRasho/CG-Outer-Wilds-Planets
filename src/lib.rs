@@ -73,7 +73,6 @@ pub fn start() {
     // let vertex_array = obj.get_vertex_array();
     // let vertex_array : Vec<Vertex> = vec![];
 
-    let model_matrix = create_model_matrix(Vec3::new(0.0, 0.0, 0.0), 1.0, Vec3::new(0.0, 0.0, 0.0));
     let mut view_matrix = create_view_matrix(camera.eye, camera.center, camera.up);
     let perspective_matrix = create_perspective_matrix(window_width as f32, window_height as f32);
     let viewport_matrix = create_viewport_matrix(framebuffer_width as f32, framebuffer_height as f32);
