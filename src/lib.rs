@@ -56,10 +56,10 @@ pub fn start() {
     // Create a list of models with one inline-defined SimpleModel
     let mut models: Vec<Box<dyn Model>> = vec![
         Box::new(SimpleModel {
-            vertex_array: planet_vertices.clone(), // Clone the Arc
+            vertex_array: space_ship_vertices.clone(), // Clone the Arc
             shader: simple_shader,
             position: Vec3::new(0.0, 0.0, 1.0),
-            scale: 1.0,
+            scale: 0.5,
             rotation: Vec3::new(0.0, 0.0, 0.0),
             collision_radius: 5.0,
         }),
@@ -197,12 +197,12 @@ fn handle_input(window: &Window, camera: &mut Camera, subject: &mut dyn Model) {
         camera.change_center(subject_position);
     }
     if window.is_key_down(Key::K) {
-        subject_position.z -= TRANSLATE_STEP;
+        subject_position.z += TRANSLATE_STEP;
         subject.set_position(subject_position);
         camera.change_center(subject_position);
     }
     if window.is_key_down(Key::I) {
-        subject_position.z += TRANSLATE_STEP;
+        subject_position.z -= TRANSLATE_STEP;
         subject.set_position(subject_position);
         camera.change_center(subject_position);
     }
