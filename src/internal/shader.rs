@@ -31,6 +31,12 @@ static CLOUDS_GENERATOR: Lazy<Mutex<FastNoiseLite>> = Lazy::new(|| {
   Mutex::new(noise)
 });
 
+static CRATER_GENERATOR: Lazy<Mutex<FastNoiseLite>> = Lazy::new(|| {
+  let mut noise = FastNoiseLite::new();
+  noise.set_noise_type(Some(NoiseType::OpenSimplex2S)); // Use OpenSimplex2S for smooth crater patterns
+  noise.set_frequency(Some(1.0)); // Adjust frequency for crater density
+  Mutex::new(noise)
+});
 
 pub fn vertex_shader(vertex: &Vertex, transformation_matrix: &Mat4, uniforms: &Uniforms) -> Vertex {
   // Transform position
@@ -137,7 +143,7 @@ pub fn earth_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
       let noise_value = noise.get_noise_2d(fragment.vertex_position.x + displacement, fragment.vertex_position.y);
       
       // Cloud texture displacement (clouds move slightly faster than the Earth texture)
-      let cloud_displacement = time_factor * 0.1; // Clouds move faster for more dynamic effect
+      let cloud_displacement = time_factor * 0.3; // Clouds move faster for more dynamic effect
       let cloud_noise_value = clouds_noise.get_noise_2d(fragment.vertex_position.x + cloud_displacement, fragment.vertex_position.y);
   
       // The noise value can represent height, so map it to the terrain color
@@ -169,4 +175,126 @@ pub fn earth_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
   
       // Multiply by intensity for lighting effects
       final_color * fragment.intensity.max(0.4)
+}
+
+pub fn crater_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
+  // Lock the Mutex to get a mutable reference to the Earth and crater noise generators
+  let noise = EARTH_GENERATOR.lock().unwrap();
+  let crater_noise = CRATER_GENERATOR.lock().unwrap();
+
+  // Slow down the passage of time by scaling the time value
+  let time_factor = (uniforms.time as f32) / 10.0; // Slow down time progression
+  
+  // Displacement for general surface texture (smoothly moving over time)
+  let displacement = time_factor * 0.05; // Small displacement factor to smooth the noise evolution
+  let surface_noise_value = noise.get_noise_2d(fragment.vertex_position.x + displacement, fragment.vertex_position.y);
+
+  // Displacement for crater texture (to make craters move differently than the surface)
+  let crater_displacement = time_factor * 0.05; // Craters move slower for a more stable look
+  let crater_noise_value = crater_noise.get_noise_2d(fragment.vertex_position.x + crater_displacement, fragment.vertex_position.y);
+
+  // The noise value can represent height, so map it to the terrain color
+  let surface_level = 0.0; // Base surface level
+  let crater_level = -0.3; // Crater depth level
+
+  // Define colors for surface and craters
+  let surface_color = Color::new(160, 160, 160); // Light grey for the general surface
+  let crater_color = Color::new(90, 90, 90); // Dark grey for craters
+
+  // Blend between surface and crater based on noise value (height)
+  let base_color = if surface_noise_value > surface_level {
+      surface_color // Surface color
+  } else {
+      // Blend between surface color and crater color based on crater depth
+      surface_color.lerp(&crater_color, (crater_noise_value - crater_level) / (surface_level - crater_level))
+  };
+
+  // Adjust the base color by light intensity (shading)
+  let shaded_color = base_color;
+
+  // Multiply by intensity for additional lighting effects (to make the texture more dynamic)
+  shaded_color * fragment.intensity.max(0.4)
+}
+
+pub fn saturn_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
+    // Define the three stripe colors
+    let color1 = Color::new(210, 180, 140); // Light tan
+    let color2 = Color::new(160, 82, 45);  // Reddish brown
+    let color3 = Color::new(255, 228, 196); // Pale cream
+
+    // Control the width of the stripes
+    let stripe_width = 0.1; // Adjust for thinner or thicker bands
+
+    // Use the y-position of the vertex to determine the stripe
+    let y_position = fragment.vertex_position.y; // The y-coordinate determines the stripe
+    let stripe_value = (y_position / stripe_width).floor() as i32;
+
+    // Smooth interpolation factor between stripes
+    let transition_factor = (y_position / stripe_width).fract().abs();
+
+    // Get the base colors for the current and next stripe
+    let current_color = match stripe_value % 3 {
+        0 => color1,
+        1 => color2,
+        _ => color3,
+    };
+
+    let next_color = match (stripe_value + 1) % 3 {
+        0 => color1,
+        1 => color2,
+        _ => color3,
+    };
+
+    // Interpolate between the current stripe and the next stripe
+    let base_color = current_color.lerp(&next_color, transition_factor);
+
+    // Adjust brightness based on the fragment's intensity
+    base_color * fragment.intensity.max(0.4)
+}
+
+pub fn pluto_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
+  // Lock the noise generator for craters
+  let noise = CRATER_GENERATOR.lock().unwrap();
+
+  // Define the heart's center position and scale
+  let heart_center = Vec2::new(0.0, -0.2); // Center near the bottom
+  let heart_scale = 0.2; // Scale for a properly-sized heart
+
+  // Use noise to create surface details (craters)
+  let noise_value = noise.get_noise_2d(
+      fragment.vertex_position.x,
+      fragment.vertex_position.y,
+  );
+
+  // Map noise to grayscale for the base surface
+  let base_surface = Color::new(
+      (noise_value * 40.0 + 150.0) as u8, // Light gray
+      (noise_value * 50.0 + 150.0) as u8,
+      (noise_value * 30.0 + 150.0) as u8,
+  );
+
+  // Calculate the relative position for the heart
+  let relative_pos = Vec2::new(
+      (fragment.vertex_position.x - heart_center.x) / heart_scale,
+      (fragment.vertex_position.y - heart_center.y) / heart_scale,
+  );
+
+  // Improved heart shape formula:
+  // A smoother, fuller heart shape derived from polar cardioid equations
+  // r = 1 - sin(theta), transformed into Cartesian coordinates
+  let x = relative_pos.x;
+  let y = relative_pos.y;
+  let heart_value = (x * x + (5.0 * y / 4.0 - x.abs().sqrt()).powi(2)) - 1.0;
+
+  // Adjust the heart mask to define the heart region
+  let heart_mask = (1.0 - heart_value.abs().min(1.0)).max(0.0); // Clamp to create a smooth mask
+
+  // Define the heart color
+  let heart_color = Color::new(200, 80, 100); // Reddish-pink for the heart
+
+  // Blend the heart color and base texture
+  let blended_color = heart_color.lerp(&base_surface, 1.0 - heart_mask);
+
+  // Apply the fragment's intensity
+  blended_color * fragment.intensity.max(0.4)
 }
