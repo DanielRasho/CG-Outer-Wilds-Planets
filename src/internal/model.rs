@@ -15,6 +15,7 @@ pub trait Model {
     fn set_position(&mut self, position: Vec3);
     fn get_scale(&self) -> f32;
     fn get_rotation(&self) -> Vec3;
+    fn set_rotation(&mut self, rotation: Vec3);
     fn get_colision_radius(&self) -> f32;
     fn as_any(&self) -> &dyn Any; // Add this method
     fn as_any_mut(&mut self) -> &mut dyn Any; // Add this method for mutable access
@@ -54,6 +55,10 @@ impl Model for SimpleModel {
 
     fn get_rotation(&self) -> Vec3 {
         self.rotation
+    }
+
+    fn set_rotation(&mut self, rotation: Vec3){
+        self.rotation = rotation;
     }
 
     fn get_colision_radius(&self) -> f32 {
@@ -109,6 +114,10 @@ impl Model for Planet {
 
     fn get_rotation(&self) -> Vec3 {
         self.rotation
+    }
+
+    fn set_rotation(&mut self, rotation: Vec3){
+        self.rotation = rotation;
     }
 
     fn get_colision_radius(&self) -> f32 {

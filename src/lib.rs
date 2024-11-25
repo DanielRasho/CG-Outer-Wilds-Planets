@@ -15,7 +15,7 @@ use internal::framebuffer::Framebuffer;
 use internal::render::{create_model_matrix, create_perspective_matrix, create_view_matrix, create_viewport_matrix, draw_orbit, render, Uniforms};
 use internal::entity::color::Color;
 use internal::model::{Model, SimpleModel, Planet};
-use internal::shader::{crater_shader, earth_shader, hypnos_shader, pluto_shader, saturn_shader, simple_shader, sun_shader, vortex_shader};
+use internal::shader::{crater_shader, earth_shader, hypnos_shader, pluto_shader, saturn_ring_shader, saturn_shader, simple_shader, sun_shader, vortex_shader};
 
 
 pub fn start() {
@@ -51,9 +51,11 @@ pub fn start() {
     
     let space_ship_obj = Obj::load("./assets/mesh/spaceShip2.obj").expect("Failed to load obj");
     let planet_obj = Obj::load("./assets/mesh/sphere.obj").expect("Failed to load obj");
+    let rings_obj = Obj::load("./assets/mesh/rings.obj").expect("Failed to load obj");
     
     let space_ship_vertices = Arc::new(space_ship_obj.get_vertex_array());
     let planet_vertices = Arc::new(planet_obj.get_vertex_array());
+    let rings_vertices = Arc::new(rings_obj.get_vertex_array());
     
     // Create a list of models with one inline-defined SimpleModel
     let mut models: Vec<Box<dyn Model>> = vec![
@@ -100,8 +102,19 @@ pub fn start() {
         )),
         Box::new(Planet::new(
             planet_vertices.clone(), // Clone the Arc
-            3.0,
+            2.0,
             saturn_shader,
+            30.0,
+            0.0,
+            0.0001,
+            3.0,
+            Vec3::new(0.0, 0.0, 0.0),
+            40
+        )),
+        Box::new(Planet::new(
+            rings_vertices.clone(), // Clone the Arc
+            2.0,
+            saturn_ring_shader,
             30.0,
             0.0,
             0.0001,
@@ -218,6 +231,7 @@ fn handle_input(window: &Window, camera: &mut Camera, subject: &mut dyn Model) {
     const ROTATION_SPEED : f32 = PI /20.0;
     const ZOOM_SPEED : f32 = 1.0;
     const TRANSLATE_STEP : f32 = 0.3;
+    const LIGHT_ROTATION: f32 = PI / 20.0; // Light rotation angle for subject
 
     // camera orbit controls
     if window.is_key_down(Key::B) {
@@ -226,10 +240,10 @@ fn handle_input(window: &Window, camera: &mut Camera, subject: &mut dyn Model) {
 
     // camera orbit controls
     if window.is_key_down(Key::D) {
-        camera.orbit(ROTATION_SPEED, 0.0);
+        camera.orbit(-ROTATION_SPEED, 0.0);
     }
     if window.is_key_down(Key::A) {
-        camera.orbit(-ROTATION_SPEED, 0.0);
+        camera.orbit(ROTATION_SPEED, 0.0);
     }
     if window.is_key_down(Key::S) {
         camera.orbit(0.0, -ROTATION_SPEED);
@@ -251,25 +265,35 @@ fn handle_input(window: &Window, camera: &mut Camera, subject: &mut dyn Model) {
     }
 
     let mut subject_position = subject.get_position();
-    // Model controls
-    if window.is_key_down(Key::J) {
-        subject_position.x += TRANSLATE_STEP;
-        subject.set_position(subject_position);
-        camera.change_center(subject_position);
-    }
-    if window.is_key_down(Key::L) {
+    let mut subject_rotation = subject.get_rotation(); // Assuming `get_rotation` returns the current rotation
+
+    // Model controls with rotation
+    if window.is_key_down(Key::J) { // Move left
         subject_position.x -= TRANSLATE_STEP;
+        subject_rotation.z = LIGHT_ROTATION; // Rotate counter-clockwise around Y-axis
         subject.set_position(subject_position);
+        subject.set_rotation(subject_rotation);
         camera.change_center(subject_position);
     }
-    if window.is_key_down(Key::K) {
+    if window.is_key_down(Key::L) { // Move right
+        subject_position.x += TRANSLATE_STEP;
+        subject_rotation.z = -LIGHT_ROTATION; // Rotate clockwise around Y-axis
+        subject.set_position(subject_position);
+        subject.set_rotation(subject_rotation);
+        camera.change_center(subject_position);
+    }
+    if window.is_key_down(Key::K) { // Move back
         subject_position.z += TRANSLATE_STEP;
+        subject_rotation.x = LIGHT_ROTATION; // Rotate upwards around X-axis
         subject.set_position(subject_position);
+        subject.set_rotation(subject_rotation);
         camera.change_center(subject_position);
     }
-    if window.is_key_down(Key::I) {
+    if window.is_key_down(Key::I) { // Move forward
         subject_position.z -= TRANSLATE_STEP;
+        subject_rotation.x = -LIGHT_ROTATION; // Rotate downwards around X-axis
         subject.set_position(subject_position);
+        subject.set_rotation(subject_rotation);
         camera.change_center(subject_position);
     }
 
@@ -284,8 +308,14 @@ fn handle_input(window: &Window, camera: &mut Camera, subject: &mut dyn Model) {
         camera.change_center(subject_position);
     }
 
-    
     // print!("eye {} center {} up {}", camera.eye, camera.center, camera.up);
-    
+    // Model controls with rotation
+    if window.is_key_released(Key::J) ||
+    window.is_key_released(Key::L) ||
+    window.is_key_released(Key::I) ||
+    window.is_key_released(Key::K)
+    { // Move left
+        subject.set_rotation(Vec3::zeros());// Rotate counter-clockwise around Y-axis
+    }
 }
 

@@ -348,7 +348,7 @@ pub fn vortex_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
         mid_color.lerp(&edge_color, (radius - 0.5).min(1.0)) // Blend from purple to blue
     };
 
-    color * fragment.intensity
+    color * fragment.intensity.max(0.5)
 }
 
 pub fn hypnos_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
@@ -373,5 +373,46 @@ pub fn hypnos_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
   let final_color = planet_color.lerp(&fractal_color, normalized_noise_value);
 
   // Apply fragment intensity to control brightness
-  final_color * fragment.intensity.min(0.8)
+  final_color * fragment.intensity.max(0.5)
+}
+
+pub fn saturn_ring_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
+    // Define the colors for the stripes
+    let color1 = Color::new(194, 194, 194); // Light tan
+    let color2 = Color::new(128, 127, 122);  // Reddish brown
+    let color3 = Color::new(242, 228, 196); // Pale cream
+
+    // Ring properties
+    let ring_center = Vec3::new(0.0, 0.0, 0.0); // Center of the ring in world space
+    let stripe_width = 0.1;                    // Width of each stripe
+
+    // Compute the radial distance in the XZ plane (ignoring the Y-axis)
+    let fragment_position_xz = fragment.vertex_position.xz(); // Extract x and z
+    let ring_center_xz = ring_center.xz();                   // Extract center x and z
+    let radial_distance = (fragment_position_xz - ring_center_xz).norm(); // Distance in XZ plane
+
+    // Determine which stripe the fragment belongs to
+    let stripe_value = (radial_distance / stripe_width).floor() as i32;
+
+    // Smooth transition between stripes
+    let transition_factor = (radial_distance / stripe_width).fract().abs();
+
+    // Determine the current and next stripe colors
+    let current_color = match stripe_value % 3 {
+        0 => color1,
+        1 => color2,
+        _ => color3,
+    };
+
+    let next_color = match (stripe_value + 1) % 3 {
+        0 => color1,
+        1 => color2,
+        _ => color3,
+    };
+
+    // Interpolate between the current stripe and the next stripe
+    let base_color = current_color.lerp(&next_color, transition_factor);
+
+    // Adjust brightness based on the fragment's intensity
+    base_color * fragment.intensity.max(0.4)
 }
