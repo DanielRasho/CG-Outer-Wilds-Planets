@@ -7,7 +7,7 @@ use super::entity::fragment::Fragment;
 use super::render::Uniforms;
 use super::entity::color::Color;
 
-use fastnoise_lite::{FastNoiseLite, NoiseType};
+use fastnoise_lite::{FastNoiseLite, NoiseType, FractalType};
 
 static SUN_GENERATOR: Lazy<Mutex<FastNoiseLite>> = Lazy::new(|| {
   let mut noise = FastNoiseLite::new();
@@ -37,6 +37,25 @@ static CRATER_GENERATOR: Lazy<Mutex<FastNoiseLite>> = Lazy::new(|| {
   noise.set_frequency(Some(1.0)); // Adjust frequency for crater density
   Mutex::new(noise)
 });
+
+static CHIP_PATH_GENERATOR: Lazy<Mutex<FastNoiseLite>> = Lazy::new(|| {
+  let mut noise = FastNoiseLite::new();
+  noise.set_noise_type(Some(NoiseType::Perlin)); // Use Perlin noise for smoother patterns
+  noise.set_frequency(Some(10.0)); // Adjust frequency for smaller, detailed paths
+  Mutex::new(noise)
+});
+
+static ADDITIONAL_PATH_GENERATOR: Lazy<Mutex<FastNoiseLite>> = Lazy::new(|| {
+  let mut noise = FastNoiseLite::new();
+  noise.set_noise_type(Some(NoiseType::OpenSimplex2S)); // OpenSimplex2S for smooth patterns
+  noise.set_frequency(Some(3.0)); // Adjust frequency for detail
+  noise.set_fractal_type(Some(FractalType::PingPong)); // Using the PingPong fractal
+  noise.set_fractal_octaves(Some(1)); // Control the octaves for more complexity
+  noise.set_fractal_ping_pong_strength(Some(2.0));
+  Mutex::new(noise)
+});
+
+
 
 pub fn vertex_shader(vertex: &Vertex, transformation_matrix: &Mat4, uniforms: &Uniforms) -> Vertex {
   // Transform position
@@ -297,4 +316,62 @@ pub fn pluto_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
 
   // Apply the fragment's intensity
   blended_color * fragment.intensity.max(0.4)
+}
+
+pub fn vortex_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
+    let noise = CRATER_GENERATOR.lock().unwrap();
+
+    // Convert Cartesian coordinates to polar
+    let x = fragment.vertex_position.x;
+    let y = fragment.vertex_position.y;
+    let radius = (x.powi(2) + y.powi(2)).sqrt(); // Distance from the center
+    let mut angle = y.atan2(x); // Angle in radians
+
+    // Add a time-based rotation to the angle for swirling
+    angle += uniforms.time * 0.5;
+
+    // Convert back to Cartesian coordinates for distortion
+    let swirl_x = radius * angle.cos();
+    let swirl_y = radius * angle.sin();
+
+    // Generate noise based on the distorted coordinates
+    let noise_value = noise.get_noise_2d(swirl_x, swirl_y);
+
+    // Map the noise value to a color gradient
+    let core_color = Color::new(255, 50, 50); // Bright red for the vortex center
+    let mid_color = Color::new(120, 60, 240); // Purple for swirling areas
+    let edge_color = Color::new(10, 10, 30); // Dark blue for outer regions
+
+    let color = if radius < 0.5 {
+        core_color.lerp(&mid_color, noise_value * 0.5 + 0.5) // Blend from red to purple
+    } else {
+        mid_color.lerp(&edge_color, (radius - 0.5).min(1.0)) // Blend from purple to blue
+    };
+
+    color * fragment.intensity
+}
+
+pub fn hypnos_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
+  let noise = ADDITIONAL_PATH_GENERATOR.lock().unwrap();
+
+  // Slow down the passage of time to create a more subtle animation effect
+  let time_factor = (uniforms.time as f32) / 10.0;
+
+  // Get the PingPong fractal noise based on the fragment's position
+  let noise_value = noise.get_noise_2d(fragment.vertex_position.x * 5.0, fragment.vertex_position.y * 5.0 + time_factor);
+
+  // Normalize the noise value to the range [0, 1]
+  let normalized_noise_value = (noise_value + 1.0) * 0.5;
+
+  // Define the base planet color (dark base color for the planet)
+  let planet_color = Color::new(0, 40, 0); // Dark green color for the planet
+
+  // Define the color for the fractal noise pattern (lighter colors for the swirling effect)
+  let fractal_color = Color::new(255, 255, 0); // Yellow for the swirling effect
+
+  // Blend the planet color with the fractal pattern based on the noise value
+  let final_color = planet_color.lerp(&fractal_color, normalized_noise_value);
+
+  // Apply fragment intensity to control brightness
+  final_color * fragment.intensity.min(0.8)
 }

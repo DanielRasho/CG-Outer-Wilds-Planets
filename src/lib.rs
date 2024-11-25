@@ -15,7 +15,7 @@ use internal::framebuffer::Framebuffer;
 use internal::render::{create_model_matrix, create_perspective_matrix, create_view_matrix, create_viewport_matrix, draw_orbit, render, Uniforms};
 use internal::entity::color::Color;
 use internal::model::{Model, SimpleModel, Planet};
-use internal::shader::{crater_shader, earth_shader, pluto_shader, saturn_shader, simple_shader, sun_shader};
+use internal::shader::{crater_shader, earth_shader, hypnos_shader, pluto_shader, saturn_shader, simple_shader, sun_shader, vortex_shader};
 
 
 pub fn start() {
@@ -56,20 +56,42 @@ pub fn start() {
     // Create a list of models with one inline-defined SimpleModel
     let mut models: Vec<Box<dyn Model>> = vec![
         Box::new(SimpleModel {
-            vertex_array: planet_vertices.clone(), // Clone the Arc
-            shader: earth_shader,
-            position: Vec3::new(0.0, 0.0, 1.0),
-            scale: 0.5,
+            vertex_array: space_ship_vertices.clone(), // Clone the Arc
+            shader: simple_shader,
+            position: Vec3::new(0.0, 35.0, 10.0),
+            scale: 1.0,
             rotation: Vec3::new(0.0, 0.0, 0.0),
             collision_radius: 5.0,
         }),
         Box::new(Planet::new(
             planet_vertices.clone(), // Clone the Arc
-            1.0,
-            simple_shader,
             20.0,
+            sun_shader,
+            1.0,
             0.0,
-            0.00001,
+            0.0,
+            3.0,
+            Vec3::new(0.0, 0.0, 0.0),
+            0
+        )),
+        Box::new(Planet::new(
+            planet_vertices.clone(), // Clone the Arc
+            3.0,
+            crater_shader,
+            15.0,
+            0.0,
+            0.0008,
+            3.0,
+            Vec3::new(0.0, 0.0, 0.0),
+            40
+        )),
+        Box::new(Planet::new(
+            planet_vertices.clone(), // Clone the Arc
+            3.0,
+            earth_shader,
+            25.0,
+            0.0,
+            0.0004,
             3.0,
             Vec3::new(0.0, 0.0, 0.0),
             40
@@ -77,12 +99,45 @@ pub fn start() {
         Box::new(Planet::new(
             planet_vertices.clone(), // Clone the Arc
             4.0,
-            simple_shader,
-            50.0,
+            saturn_shader,
+            30.0,
             0.0,
             0.0001,
             3.0,
             Vec3::new(0.0, 0.0, 0.0),
+            40
+        )),
+        Box::new(Planet::new(
+            planet_vertices.clone(), // Clone the Arc
+            4.0,
+            vortex_shader,
+            38.0,
+            0.0,
+            0.0002,
+            3.0,
+            Vec3::new(0.0, 0.0, 0.0),
+            40
+        )),
+        Box::new(Planet::new(
+            planet_vertices.clone(), // Clone the Arc
+            4.0,
+            hypnos_shader,
+            45.0,
+            0.0,
+            0.0001,
+            3.0,
+            Vec3::new(0.0, 0.0, 0.0),
+            40
+        )),
+        Box::new(Planet::new(
+            planet_vertices.clone(), // Clone the Arc
+            4.0,
+            pluto_shader,
+            60.0,
+            0.0,
+            0.00015,
+            3.0,
+            Vec3::new(10.0, 0.0, 5.0),
             40
         )),
     ];

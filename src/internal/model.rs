@@ -78,6 +78,7 @@ pub struct Planet {
     pub rotation: Vec3,
     pub collision_radius: f32,
 
+    pub center: Vec3,
     pub orbit_angle: f32,
     pub orbit_speed: f32,
     pub orbit_radius: f32,
@@ -154,6 +155,7 @@ impl Planet {
             scale,
             rotation,
             collision_radius,
+            center,
             orbit_angle,
             orbit_speed,
             orbit_radius,
@@ -169,8 +171,8 @@ impl Planet {
         self.orbit_angle %= std::f32::consts::TAU;
 
         // Recalculate position based on the updated orbit angle
-        let x = self.orbit_radius * self.orbit_angle.cos();
-        let z = self.orbit_radius * self.orbit_angle.sin();
+        let x = self.center.x + self.orbit_radius * self.orbit_angle.cos();
+        let z = self.center.z + self.orbit_radius * self.orbit_angle.sin();
         self.position = Vec3::new(x, self.position.y, z);
     }
 
