@@ -131,7 +131,6 @@ pub fn draw_orbit(
 
     // Rasterization Stage
     let mut fragments = Vec::new();
-    let camera_view_dir = (camera.center - camera.eye).normalize();
 
     for (start, end) in lines {
         fragments.extend(line(&start, &end)); // Assume `line` rasterizes a line into fragments
