@@ -49,8 +49,8 @@ pub fn start() {
         Vec3::new(0.0, 0.0, 0.0),
     );
     
-    let space_ship_obj = Obj::load("./assets/mesh/spaceShip.obj").expect("Failed to load obj");
-    let planet_obj = Obj::load("./assets/mesh/planet.obj").expect("Failed to load obj");
+    let space_ship_obj = Obj::load("./assets/mesh/spaceShip2.obj").expect("Failed to load obj");
+    let planet_obj = Obj::load("./assets/mesh/sphere.obj").expect("Failed to load obj");
     
     let space_ship_vertices = Arc::new(space_ship_obj.get_vertex_array());
     let planet_vertices = Arc::new(planet_obj.get_vertex_array());
@@ -67,7 +67,7 @@ pub fn start() {
         }),
         Box::new(Planet::new(
             planet_vertices.clone(), // Clone the Arc
-            20.0,
+            10.0,
             sun_shader,
             1.0,
             0.0,
@@ -78,7 +78,7 @@ pub fn start() {
         )),
         Box::new(Planet::new(
             planet_vertices.clone(), // Clone the Arc
-            3.0,
+            1.0,
             crater_shader,
             15.0,
             0.0,
@@ -89,7 +89,7 @@ pub fn start() {
         )),
         Box::new(Planet::new(
             planet_vertices.clone(), // Clone the Arc
-            3.0,
+            2.0,
             earth_shader,
             25.0,
             0.0,
@@ -100,7 +100,7 @@ pub fn start() {
         )),
         Box::new(Planet::new(
             planet_vertices.clone(), // Clone the Arc
-            4.0,
+            3.0,
             saturn_shader,
             30.0,
             0.0,

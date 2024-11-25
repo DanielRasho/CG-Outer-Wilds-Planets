@@ -104,8 +104,8 @@ pub fn triangle_flat_shade(v1: &Vertex, v2: &Vertex, v3: &Vertex, camera_dir: Ve
                 let intensity = normal.dot(&light_dir).max(0.05);
 
                 // Create a gray color and apply lighting
-                let base_color = Color::new(100, 100, 100); // Medium gray
-                                                            // 
+                let base_color = v1.color.clone(); // Medium gray
+                                                   
                 // Positions of the original vertex
                 let vertex_position = v1.position * w1 + v2.position * w2 + v3.position * w3;
 
