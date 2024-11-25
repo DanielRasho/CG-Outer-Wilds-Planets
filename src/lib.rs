@@ -15,7 +15,7 @@ use internal::framebuffer::Framebuffer;
 use internal::render::{create_model_matrix, create_perspective_matrix, create_view_matrix, create_viewport_matrix, draw_orbit, render, Uniforms};
 use internal::entity::color::Color;
 use internal::model::{Model, SimpleModel, Planet};
-use internal::shader::simple_shader;
+use internal::shader::{simple_shader, sun_shader};
 
 
 pub fn start() {
@@ -37,13 +37,13 @@ pub fn start() {
       WindowOptions::default()
     ).unwrap();
     
-    let skybox = Skybox::new(200, 200.0, Color::new(255, 255, 255), Color::new(50, 50, 100));
+    let skybox = Skybox::new(200, 200.0, Color::new(255, 255, 255), Color::new(0, 0, 20));
 
     let mut camera = Camera::new(
         Vec3::new(0.0, 0.0, 4.0), 
         Vec3::new(0.0, 0.0, -1.0), 
         Vec3::new(0.0, 1.0, 0.0),
-        3.0,
+        1.0,
         10.0
     );
     
@@ -56,8 +56,8 @@ pub fn start() {
     // Create a list of models with one inline-defined SimpleModel
     let mut models: Vec<Box<dyn Model>> = vec![
         Box::new(SimpleModel {
-            vertex_array: space_ship_vertices.clone(), // Clone the Arc
-            shader: simple_shader,
+            vertex_array: planet_vertices.clone(), // Clone the Arc
+            shader: sun_shader,
             position: Vec3::new(0.0, 0.0, 1.0),
             scale: 0.5,
             rotation: Vec3::new(0.0, 0.0, 0.0),
@@ -80,7 +80,7 @@ pub fn start() {
             simple_shader,
             50.0,
             0.0,
-            0.00001,
+            0.0001,
             3.0,
             Vec3::new(0.0, 0.0, 0.0),
             40
@@ -93,7 +93,7 @@ pub fn start() {
     let perspective_matrix = create_perspective_matrix(window_width as f32, window_height as f32);
     let viewport_matrix = create_viewport_matrix(framebuffer_width as f32, framebuffer_height as f32);
     
-    let mut time : u32 = 0;
+    let mut time : f32 = 0.0;
     
     // RENDER LOOP
     while window.is_open() {
@@ -101,7 +101,7 @@ pub fn start() {
             break;
         }
         
-        time += 1;
+        time += 0.1;
 
         let subject = models.get_mut(0).expect("Subject not found."); // OR SOMETHING LIKE THAT
 

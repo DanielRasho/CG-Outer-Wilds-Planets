@@ -15,7 +15,7 @@ pub struct Uniforms {
     pub view_matrix: Mat4,
     pub perspective_matrix: Mat4,
     pub viewport_matrix: Mat4,
-    pub time: u32
+    pub time: f32
 }
 
 pub fn render(framebuffer: &mut Framebuffer, 
@@ -99,7 +99,7 @@ pub fn draw_orbit(
         view_matrix: uniforms.view_matrix,
         perspective_matrix: uniforms.perspective_matrix, 
         viewport_matrix: uniforms.viewport_matrix,
-        time: 0 };
+        time: 0.0 };
 
     let transformation_matrix = modified_uniforms.perspective_matrix * modified_uniforms.view_matrix * modified_uniforms.model_matrix;
 

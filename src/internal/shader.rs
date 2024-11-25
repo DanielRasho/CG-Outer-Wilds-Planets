@@ -1,8 +1,20 @@
-use nalgebra_glm::{Vec3, Vec4, Mat4};
+use once_cell::sync::Lazy;
+use nalgebra_glm::{Vec2, Vec3, Vec4, Mat4};
+use std::sync::Mutex;
+
 use super::entity::vertex::Vertex;
 use super::entity::fragment::Fragment;
 use super::render::Uniforms;
 use super::entity::color::Color;
+
+use fastnoise_lite::{FastNoiseLite, NoiseType};
+
+static NOISE_GENERATOR: Lazy<Mutex<FastNoiseLite>> = Lazy::new(|| {
+  let mut noise = FastNoiseLite::new();
+  noise.set_noise_type(Some(NoiseType::Cellular)); // Use Cellular noise for texture-like patterns
+  noise.set_frequency(Some(10.0)); // Decrease frequency for bigger cells (larger scale)
+  Mutex::new(noise) // Wrap the noise generator in a Mutex
+});
 
 pub fn vertex_shader(vertex: &Vertex, transformation_matrix: &Mat4, uniforms: &Uniforms) -> Vertex {
   // Transform position
@@ -56,4 +68,40 @@ pub fn vertex_shader(vertex: &Vertex, transformation_matrix: &Mat4, uniforms: &U
 
 pub fn simple_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
   fragment.color * fragment.intensity
+}
+
+pub fn sun_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
+      // Lock the Mutex to get a mutable reference to the noise generator
+      let mut noise = NOISE_GENERATOR.lock().unwrap();
+
+      // Slow down the passage of time by scaling the time value
+      let time_factor = (uniforms.time as f32) / 2.0; // Slow down time progression
+      
+      // Instead of resetting the seed every time, displace it around the current noise
+      let displacement = time_factor * 0.05; // Small displacement factor to smooth the noise evolution
+  
+      // Displace the noise coordinates slightly over time
+      let noise_x = noise.get_noise_2d(fragment.vertex_position.x + displacement, fragment.vertex_position.y + displacement);
+      let noise_y = noise.get_noise_2d(fragment.vertex_position.x + displacement + 0.5, fragment.vertex_position.y + displacement + 0.5);
+      
+      // Combine noise for more variation
+      let noise_factor = (noise_x + noise_y) * 0.5;
+      
+      // Compute intensity based only on the noise factor
+      let intensity = 1.0 + noise_factor * 0.3; // Increased noise factor to make the pattern more pronounced
+      
+      // Define the yellow, orange, and white colors for blending
+      let yellow = Color::new(255, 186, 3); // Bright yellow
+      let orange = Color::new(200, 50, 0); // Darker orange
+      let white = Color::new(255, 255, 255); // White for the lighter parts
+      
+      // Blend between yellow/orange and white, depending on the intensity
+      // If intensity is high, blend to white, else blend to orange
+      let color = if intensity > 1.0 {
+          yellow.lerp(&white, intensity - 1.0) // Blend from yellow to white
+      } else {
+          orange.lerp(&white, 1.0 - intensity) // Blend from orange to white
+      };
+  
+      color
 }

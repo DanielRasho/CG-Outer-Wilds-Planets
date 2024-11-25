@@ -161,9 +161,9 @@ impl Planet {
         }
     }
 
-    pub fn translate(&mut self, delta_time: u32) {
+    pub fn translate(&mut self, delta_time: f32) {
         // Update orbit angle based on orbit speed and time step
-        self.orbit_angle += self.orbit_speed * delta_time as f32;
+        self.orbit_angle += self.orbit_speed * delta_time;
 
         // Ensure the angle stays within the range [0, 2π] to prevent overflow
         self.orbit_angle %= std::f32::consts::TAU;

@@ -4,9 +4,9 @@ use std::fmt;
 
 #[derive (Debug, Copy, Clone, PartialEq)]
 pub struct Color {
-    r: u8,
-    g: u8,
-    b: u8,
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
 }
 
 impl Color {
@@ -40,6 +40,44 @@ impl Color {
             b: b.clamp(0.0, 255.0) as u8,
         }
     }
+
+    pub fn is_black(&self) -> bool {
+        self.r == 0 && self.g == 0 && self.b == 0
+    }
+
+    // New blend mode methods
+    pub fn blend_normal(&self, blend: &Color) -> Color {
+        if blend.is_black() { *self } else { *blend }
+    }
+
+    pub fn blend_multiply(&self, blend: &Color) -> Color {
+        Color::new(
+            ((self.r as f32 * blend.r as f32) / 255.0) as u8,
+            ((self.g as f32 * blend.g as f32) / 255.0) as u8,
+            ((self.b as f32 * blend.b as f32) / 255.0) as u8
+        )
+    }
+
+    pub fn blend_add(&self, blend: &Color) -> Color {
+        Color::new(
+            (self.r as u16 + blend.r as u16).min(255) as u8,
+            (self.g as u16 + blend.g as u16).min(255) as u8,
+            (self.b as u16 + blend.b as u16).min(255) as u8
+        )
+    }
+
+    
+  pub fn blend_subtract(&self, blend: &Color) -> Color {
+    if blend.is_black() {
+      *self
+    } else {
+      Color::new(
+        self.r.saturating_sub(blend.r),
+        self.g.saturating_sub(blend.g),
+        self.b.saturating_sub(blend.b)
+      )
+    }
+  }
 }
 
 impl Add for Color {
