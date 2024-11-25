@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use std::any::Any;
-use nalgebra_glm::{Vec3};
+use nalgebra_glm::{Vec2, Vec3,Vec4};
 
 use super::entity::vertex::Vertex;
 use super::entity::fragment::Fragment;
@@ -81,6 +81,7 @@ pub struct Planet {
     pub orbit_angle: f32,
     pub orbit_speed: f32,
     pub orbit_radius: f32,
+    pub orbit_segments: Vec<Vertex>
 }
 
 // Implement the Model trait for Planet
@@ -124,21 +125,27 @@ impl Model for Planet {
 
 // Planet implementation with new and translate methods
 impl Planet {
+    
     pub fn new(
-        vertex_array: Arc<Vec<Vertex>>, // Use Arc here
+        vertex_array: Arc<Vec<Vertex>>,
         scale: f32,
         shader: fn(&Fragment, &Uniforms) -> Color,
         orbit_radius: f32,
         orbit_angle: f32,
         orbit_speed: f32,
         collision_radius: f32,
+        center: Vec3, // Center of the orbit
+        orbit_segments: usize, // Number of segments for the orbit
     ) -> Self {
         // Calculate initial position based on orbit parameters
-        let x = orbit_radius * orbit_angle.cos();
-        let z = orbit_radius * orbit_angle.sin();
-        let position = Vec3::new(x, 0.0, z);
+        let x = center.x + orbit_radius * orbit_angle.cos();
+        let z = center.z + orbit_radius * orbit_angle.sin();
+        let position = Vec3::new(x, center.y, z);
 
         let rotation = Vec3::new(0.0, 0.0, 0.0);
+
+        // Generate orbit vertices
+        let orbit_vertices = create_orbit(orbit_radius, center, orbit_segments);
 
         Planet {
             vertex_array,
@@ -150,8 +157,10 @@ impl Planet {
             orbit_angle,
             orbit_speed,
             orbit_radius,
+            orbit_segments: orbit_vertices, // Initialize the orbit vertices
         }
     }
+
     pub fn translate(&mut self, delta_time: u32) {
         // Update orbit angle based on orbit speed and time step
         self.orbit_angle += self.orbit_speed * delta_time as f32;
@@ -164,4 +173,25 @@ impl Planet {
         let z = self.orbit_radius * self.orbit_angle.sin();
         self.position = Vec3::new(x, self.position.y, z);
     }
+
+}
+
+fn create_orbit(radius: f32, center: Vec3, segments: usize) -> Vec<Vertex> {
+    let mut orbit_vertices = Vec::with_capacity(segments);
+
+    for i in 0..segments {
+        let angle = 2.0 * std::f32::consts::PI * (i as f32 / segments as f32);
+        let x = center.x + radius * angle.cos();
+        let z = center.z + radius * angle.sin();
+        let position = Vec3::new(x, center.y, z);
+
+        orbit_vertices.push(Vertex::new(
+            position,
+            Vec3::new(0.0, 1.0, 0.0), // Normal vector for orbit vertices
+            Vec2::zeros(),      // Placeholder UV coordinates
+            Vec4::zeros(), // Placeholder transformed position
+        ));
+    }
+
+    orbit_vertices
 }

@@ -86,73 +86,59 @@ fn assembly(vertices: &[Vertex], should_optimize: bool) -> Vec<&[Vertex]> {
 
 pub fn draw_orbit(
     framebuffer: &mut Framebuffer,
-    center: Vec3, 
-    radius: f32, 
-    perspective_matrix: &Mat4, 
-    view_matrix: &Mat4, 
-    viewport_matrix: &Mat4,
-    segments: usize,
-    color: Color,
+    uniforms: &Uniforms,
+    segments: &[Vertex],
+    camera: &Camera,
+    orbit_color: Color,
 ) {
-        framebuffer.set_current_color(color);
+    // Vertex Shader Stage
+    let mut transformed_vertices = Vec::with_capacity(segments.len());
 
-        // Create a combined view-projection matrix
-        let vp_matrix = perspective_matrix * view_matrix;
+    let modified_uniforms = &Uniforms { 
+        model_matrix: create_model_matrix(Vec3::new(0.0, 0.0, 0.0), 1.0, Vec3::new(0.0, 0.0, 0.0)),
+        view_matrix: uniforms.view_matrix,
+        perspective_matrix: uniforms.perspective_matrix, 
+        viewport_matrix: uniforms.viewport_matrix,
+        time: 0 };
 
-        // Create a vector to store the vertices
-        let mut orbit_vertices = Vec::with_capacity(segments);
-    
-        // Generate vertices for the circle in 3D space and store them in `orbit_vertices`
-        for i in 0..segments {
-            let angle = 2.0 * std::f32::consts::PI * (i as f32 / segments as f32);
-            let x = center.x + radius * angle.cos();
-            let y = center.y; // You can adjust y if you want the circle to tilt
-            let z = center.z + radius * angle.sin();
-    
-            let position = Vec3::new(x, y, z);
-    
-            // Create a new Vertex with the position
-            let mut vertex = Vertex::new(
-                position, 
-                Vec3::new(0.0, 1.0, 0.0),
-                Vec2::new(0.0, 0.0),
-                Vec4::new(0.0, 0.0, 0.0, 0.0)
-            );
-            
-            // Apply the view-projection matrix to the position
-            let transformed_position = vp_matrix * position.push(1.0); // Homogeneous transformation
-            vertex.set_transformed(transformed_position.xyz(), Vec3::new(0.0, 0.0, 0.0)); // Set the transformed position
-    
-            orbit_vertices.push(vertex);
-        }
-        
-        
-        let uniforms = Uniforms{ 
-            model_matrix: create_model_matrix(Vec3::new(0.0, 0.0, 0.0) , 1.0, Vec3::new(0.0, 0.0, 0.0)) , 
-            view_matrix: *view_matrix, 
-            perspective_matrix: *perspective_matrix,
-            viewport_matrix: *viewport_matrix,
-            time: 0
-        };
+    let transformation_matrix = modified_uniforms.perspective_matrix * modified_uniforms.view_matrix * modified_uniforms.model_matrix;
 
-        // Vertex Shader Stage
-        let mut transformed_vertices = Vec::with_capacity(orbit_vertices.len());
-        let tranformation_matrix = uniforms.perspective_matrix * uniforms.view_matrix * uniforms.model_matrix;
-        for vertex in orbit_vertices {
-            let transformed = vertex_shader(&vertex, &tranformation_matrix, &uniforms);
-            transformed_vertices.push(transformed);
-        }
-    
-    
-        let mut fragments = Vec::new();
-        // Now we have all the vertices, and we can render the orbit by connecting them with lines
-        for i in 0..segments {
-            let start = &transformed_vertices[i];
-            let end = &transformed_vertices[(i + 1) % segments]; // Loop back to the start for a closed circle
-            fragments.extend(line(start, end));
+
+    for vertex in segments {
+        let transformed = vertex_shader(vertex, &transformation_matrix, modified_uniforms);
+        transformed_vertices.push(transformed);
     }
-        
+
+    // Line Assembly Stage
+    let mut lines = Vec::new();
+    for i in 0..segments.len() {
+        let start = &transformed_vertices[i];
+        let end = &transformed_vertices[(i + 1) % segments.len()]; // Wrap around for closed orbit
+
+        // Only keep lines where at least one endpoint is within the clip space range
+        let range = -1.0..1.0;
+        let start_in_range = range.contains(&start.frustrum_position.x)
+            && range.contains(&start.frustrum_position.y)
+            && range.contains(&start.frustrum_position.z);
+        let end_in_range = range.contains(&end.frustrum_position.x)
+            && range.contains(&end.frustrum_position.y)
+            && range.contains(&end.frustrum_position.z);
+
+        if start_in_range || end_in_range {
+            lines.push((start.clone(), end.clone()));
+        }
+    }
+
+    // Rasterization Stage
+    let mut fragments = Vec::new();
+    let camera_view_dir = (camera.center - camera.eye).normalize();
+
+    for (start, end) in lines {
+        fragments.extend(line(&start, &end)); // Assume `line` rasterizes a line into fragments
+    }
+
     // Fragment Processing Stage
+    framebuffer.set_current_color(orbit_color);
     for fragment in fragments {
         let x = fragment.position.x as usize;
         let y = fragment.position.y as usize;

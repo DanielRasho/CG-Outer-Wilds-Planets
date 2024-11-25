@@ -71,6 +71,8 @@ pub fn start() {
             0.0,
             0.00001,
             3.0,
+            Vec3::new(0.0, 0.0, 0.0),
+            40
         )),
         Box::new(Planet::new(
             planet_vertices.clone(), // Clone the Arc
@@ -80,6 +82,8 @@ pub fn start() {
             0.0,
             0.00001,
             3.0,
+            Vec3::new(0.0, 0.0, 0.0),
+            40
         )),
     ];
     // let vertex_array = obj.get_vertex_array();
@@ -124,24 +128,20 @@ pub fn start() {
 
         for model in &mut models{
             
-            if let Some(planet) = model.as_any_mut().downcast_mut::<Planet>() {
-                /*
-                    draw_orbit(
-                        &mut framebuffer,
-                        Vec3::new(0.0, 0.0, 0.0),
-                        planet.orbit_radius,
-                        &perspective_matrix,
-                        &view_matrix,
-                        &viewport_matrix, 
-                        50, 
-                        Color::new(255,255,255));
-                 */
-                planet.translate(time);
-            }
-            
             let model_matrix = create_model_matrix(model.get_position(), model.get_scale(), model.get_rotation());
 
             let uniforms = Uniforms{ model_matrix , view_matrix, perspective_matrix, viewport_matrix, time};
+            
+            if let Some(planet) = model.as_any_mut().downcast_mut::<Planet>() {
+                draw_orbit(
+                    &mut framebuffer,
+                    &uniforms,
+                    &planet.orbit_segments,
+                    &camera,
+                    Color::new(255, 255, 255)
+                );
+                planet.translate(time);
+            }
             
             render(&mut framebuffer, &uniforms, model.get_vertex_array(), &camera, model.get_shader());
         }
@@ -187,12 +187,12 @@ fn handle_input(window: &Window, camera: &mut Camera, subject: &mut dyn Model) {
     let mut subject_position = subject.get_position();
     // Model controls
     if window.is_key_down(Key::J) {
-        subject_position.x -= TRANSLATE_STEP;
+        subject_position.x += TRANSLATE_STEP;
         subject.set_position(subject_position);
         camera.change_center(subject_position);
     }
     if window.is_key_down(Key::L) {
-        subject_position.x += TRANSLATE_STEP;
+        subject_position.x -= TRANSLATE_STEP;
         subject.set_position(subject_position);
         camera.change_center(subject_position);
     }
