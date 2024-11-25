@@ -15,7 +15,7 @@ use internal::framebuffer::Framebuffer;
 use internal::render::{create_model_matrix, create_perspective_matrix, create_view_matrix, create_viewport_matrix, draw_orbit, render, Uniforms};
 use internal::entity::color::Color;
 use internal::model::{Model, SimpleModel, Planet};
-use internal::shader::{simple_shader, sun_shader};
+use internal::shader::{earth_shader, simple_shader, sun_shader};
 
 
 pub fn start() {
@@ -57,7 +57,7 @@ pub fn start() {
     let mut models: Vec<Box<dyn Model>> = vec![
         Box::new(SimpleModel {
             vertex_array: planet_vertices.clone(), // Clone the Arc
-            shader: sun_shader,
+            shader: earth_shader,
             position: Vec3::new(0.0, 0.0, 1.0),
             scale: 0.5,
             rotation: Vec3::new(0.0, 0.0, 0.0),

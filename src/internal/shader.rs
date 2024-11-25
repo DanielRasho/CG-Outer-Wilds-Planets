@@ -9,12 +9,28 @@ use super::entity::color::Color;
 
 use fastnoise_lite::{FastNoiseLite, NoiseType};
 
-static NOISE_GENERATOR: Lazy<Mutex<FastNoiseLite>> = Lazy::new(|| {
+static SUN_GENERATOR: Lazy<Mutex<FastNoiseLite>> = Lazy::new(|| {
   let mut noise = FastNoiseLite::new();
   noise.set_noise_type(Some(NoiseType::Cellular)); // Use Cellular noise for texture-like patterns
   noise.set_frequency(Some(10.0)); // Decrease frequency for bigger cells (larger scale)
   Mutex::new(noise) // Wrap the noise generator in a Mutex
 });
+
+static EARTH_GENERATOR: Lazy<Mutex<FastNoiseLite>> = Lazy::new(|| {
+  let mut noise = FastNoiseLite::new();
+  noise.set_noise_type(Some(NoiseType::Value)); // Using Perlin noise for smooth height maps
+  noise.set_frequency(Some(10.0)); // Low frequency for large terrain features
+  Mutex::new(noise) // Wrap the noise generator in a Mutex
+});
+
+// New Cloud Generator
+static CLOUDS_GENERATOR: Lazy<Mutex<FastNoiseLite>> = Lazy::new(|| {
+  let mut noise = FastNoiseLite::new();
+  noise.set_noise_type(Some(NoiseType::OpenSimplex2S)); // Use Simplex noise for smooth cloud patterns
+  noise.set_frequency(Some(0.8)); // Adjust frequency for cloud density
+  Mutex::new(noise)
+});
+
 
 pub fn vertex_shader(vertex: &Vertex, transformation_matrix: &Mat4, uniforms: &Uniforms) -> Vertex {
   // Transform position
@@ -72,17 +88,17 @@ pub fn simple_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
 
 pub fn sun_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
       // Lock the Mutex to get a mutable reference to the noise generator
-      let mut noise = NOISE_GENERATOR.lock().unwrap();
+      let mut noise = SUN_GENERATOR.lock().unwrap();
 
       // Slow down the passage of time by scaling the time value
-      let time_factor = (uniforms.time as f32) / 2.0; // Slow down time progression
+      let time_factor = (uniforms.time as f32) / 10.0; // Slow down time progression
       
       // Instead of resetting the seed every time, displace it around the current noise
       let displacement = time_factor * 0.05; // Small displacement factor to smooth the noise evolution
   
       // Displace the noise coordinates slightly over time
       let noise_x = noise.get_noise_2d(fragment.vertex_position.x + displacement, fragment.vertex_position.y + displacement);
-      let noise_y = noise.get_noise_2d(fragment.vertex_position.x + displacement + 0.5, fragment.vertex_position.y + displacement + 0.5);
+      let noise_y = noise.get_noise_2d(fragment.vertex_position.x + 0.5, fragment.vertex_position.y + 0.5);
       
       // Combine noise for more variation
       let noise_factor = (noise_x + noise_y) * 0.5;
@@ -104,4 +120,53 @@ pub fn sun_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
       };
   
       color
+}
+
+pub fn earth_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
+      // Lock the Mutex to get a mutable reference to the Earth noise generator
+      let noise = EARTH_GENERATOR.lock().unwrap();
+
+      // Lock the Mutex to get a mutable reference to the Clouds noise generator
+      let clouds_noise = CLOUDS_GENERATOR.lock().unwrap();
+  
+      // Slow down the passage of time by scaling the time value
+      let time_factor = (uniforms.time as f32) / 10.0; // Slow down time progression
+      
+      // Displacement for Earth texture
+      let displacement = time_factor * 0.05; // Small displacement factor to smooth the noise evolution
+      let noise_value = noise.get_noise_2d(fragment.vertex_position.x + displacement, fragment.vertex_position.y);
+      
+      // Cloud texture displacement (clouds move slightly faster than the Earth texture)
+      let cloud_displacement = time_factor * 0.1; // Clouds move faster for more dynamic effect
+      let cloud_noise_value = clouds_noise.get_noise_2d(fragment.vertex_position.x + cloud_displacement, fragment.vertex_position.y);
+  
+      // The noise value can represent height, so map it to the terrain color
+      let ocean_level = 0.0; // Ocean is at noise value 0.0
+      let terrain_level = 0.5; // Terrain starts at noise value 0.5 (adjustable)
+    
+      // Define the blue (ocean) and green (terrain) colors
+      let ocean_color = Color::new(0, 0, 255); // Blue for the ocean
+      let terrain_color = Color::new(34, 139, 34); // Green for the terrain
+      
+      // Blend between ocean and terrain based on noise value (height)
+      let earth_color = if noise_value < ocean_level {
+          ocean_color // Blue for ocean
+      } else if noise_value < terrain_level {
+          // Blend between blue and green for shallow water/shoreline
+          ocean_color.lerp(&terrain_color, (noise_value - ocean_level) / (terrain_level - ocean_level))
+      } else {
+          terrain_color // Green for terrain
+      };
+  
+      // Cloud effect: The higher the cloud noise value, the less visible the clouds
+      let cloud_opacity = (cloud_noise_value - 0.2).abs() ; // Adjust cloud opacity based on the noise value (max 1.0)
+  
+      // Define the cloud color as white with some transparency
+      let cloud_color = Color::new(255, 255, 255); // White for clouds
+  
+      // Blend the cloud color with the Earth color based on cloud opacity
+      let final_color = earth_color.lerp(&cloud_color, cloud_opacity);
+  
+      // Multiply by intensity for lighting effects
+      final_color * fragment.intensity.max(0.4)
 }
