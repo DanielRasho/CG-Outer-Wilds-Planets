@@ -113,10 +113,10 @@ pub fn simple_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
 
 pub fn sun_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
       // Lock the Mutex to get a mutable reference to the noise generator
-      let mut noise = SUN_GENERATOR.lock().unwrap();
+      let noise = SUN_GENERATOR.lock().unwrap();
 
       // Slow down the passage of time by scaling the time value
-      let time_factor = (uniforms.time as f32) / 10.0; // Slow down time progression
+      let time_factor = (uniforms.time as f32) / 2.0; // Slow down time progression
       
       // Instead of resetting the seed every time, displace it around the current noise
       let displacement = time_factor * 0.05; // Small displacement factor to smooth the noise evolution

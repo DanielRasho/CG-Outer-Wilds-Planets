@@ -7,22 +7,38 @@ pub struct Camera {
     pub up: Vec3,           // The upwards direction
     pub has_changed: bool,  // Tracks if the camera state has changed
 
+    pub is_bird_view: bool,
+    pub bird_view_eye : Vec3,
+    pub bird_view_center: Vec3,
+    pub cache_eye_view: Vec3,
+    pub cache_center_view: Vec3,
+
     pub min_radius: f32,    // Minimum allowed radius
     pub max_radius: f32,    // Maximum allowed radius
     pub current_radius: f32, // Current radius
 }
 
 impl Camera {
-    pub fn new(eye: Vec3, center: Vec3, up: Vec3, min_radius: f32, max_radius: f32) -> Self {
+    pub fn new(
+        eye: Vec3,
+        center: Vec3,
+        up: Vec3, min_radius: f32, 
+        max_radius: f32, 
+        bird_view_eye: Vec3, 
+        bird_view_center: Vec3
+    ) -> Self {
         let current_radius = (eye - center).magnitude().clamp(min_radius, max_radius);
-        let direction = (eye - center).normalize();
-        let adjusted_eye = center + direction * current_radius;
 
         Camera {
-            eye: adjusted_eye,
+            eye: eye,
             center,
             up,
             has_changed: true,
+            is_bird_view: false,
+            bird_view_eye : bird_view_eye,
+            bird_view_center: bird_view_center,
+            cache_center_view : center,
+            cache_eye_view : eye,
             min_radius,
             max_radius,
             current_radius,
@@ -79,5 +95,22 @@ impl Camera {
         } else {
             false
         }
+    }
+
+    pub fn toogle_bird_view(&mut self) {
+        if self.is_bird_view {
+            self.eye = self.cache_eye_view;
+            self.center = self.cache_center_view;
+            self.is_bird_view = false;
+        } else {
+
+            self.cache_eye_view = self.eye;
+            self.cache_center_view = self.center;
+
+            self.eye = self.bird_view_eye;
+            self.center = self.bird_view_center;
+            self.is_bird_view = true;
+        }
+        self.has_changed = true;
     }
 }

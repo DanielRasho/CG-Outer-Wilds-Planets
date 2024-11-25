@@ -40,11 +40,13 @@ pub fn start() {
     let skybox = Skybox::new(200, 200.0, Color::new(255, 255, 255), Color::new(0, 0, 20));
 
     let mut camera = Camera::new(
-        Vec3::new(0.0, 0.0, 4.0), 
+        Vec3::new(0.0, 10.0, 60.0),
         Vec3::new(0.0, 0.0, -1.0), 
         Vec3::new(0.0, 1.0, 0.0),
         1.0,
-        10.0
+        15.0,
+        Vec3::new(-5.0, 110.0, -10.0), 
+        Vec3::new(0.0, 0.0, 0.0),
     );
     
     let space_ship_obj = Obj::load("./assets/mesh/spaceShip.obj").expect("Failed to load obj");
@@ -58,7 +60,7 @@ pub fn start() {
         Box::new(SimpleModel {
             vertex_array: space_ship_vertices.clone(), // Clone the Arc
             shader: simple_shader,
-            position: Vec3::new(0.0, 35.0, 10.0),
+            position: Vec3::new(0.0, 10.0, 55.0),
             scale: 1.0,
             rotation: Vec3::new(0.0, 0.0, 0.0),
             collision_radius: 5.0,
@@ -218,6 +220,11 @@ fn handle_input(window: &Window, camera: &mut Camera, subject: &mut dyn Model) {
     const TRANSLATE_STEP : f32 = 0.3;
 
     // camera orbit controls
+    if window.is_key_down(Key::B) {
+        camera.toogle_bird_view();
+    }
+
+    // camera orbit controls
     if window.is_key_down(Key::D) {
         camera.orbit(ROTATION_SPEED, 0.0);
     }
@@ -237,6 +244,10 @@ fn handle_input(window: &Window, camera: &mut Camera, subject: &mut dyn Model) {
     }
     if window.is_key_down(Key::E) {
         camera.zoom(-ZOOM_SPEED);
+    }
+
+    if camera.is_bird_view{
+        return
     }
 
     let mut subject_position = subject.get_position();
